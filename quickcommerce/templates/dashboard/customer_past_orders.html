@@ -1,0 +1,102 @@
+{% extends 'dashboard/customer_dash.html' %}
+{% block title %}Past Orders{% endblock %}
+
+{% block account_content  %}
+
+<div class="container mt-4">
+    <h3 class="mb-4">Your Past Orders</h3>
+    {% if orders %}
+    <div class="accordion" id="ordersAccordion">
+        {% for order in orders %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ order.id }}">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ order.id }}" aria-expanded="true" aria-controls="collapse{{ order.id }}">
+                    Order ID: {{ order.id }} - Total: ₹{{ order.total_amount }} - Placed At: {{ order.placed_at|date:"Y-m-d H:i" }}
+                </button>
+            </h2>
+            <div id="collapse{{ order.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ order.id }}" data-bs-parent="#ordersAccordion">
+                <div class="accordion-body">
+                    <strong>Order Details</strong>
+                    <p>Payment Status: {{ order.get_payment_status_display }} <br>
+                    Order Status: {{ order.get_order_status_display }}</p>
+
+                    <!-- Order Items -->
+                    <table class="table table-bordered mt-3">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Return Request</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.order_items.all %}
+                            <tr>
+                                <td class="text-capitalize">{{ item.product.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>₹{{ item.price }}</td>
+                                <td>₹{{ item.get_total_price }}</td>
+                                <td>
+                                    {% if not item.return_requests.exists %}
+                                    <!-- Return Request Form (Dynamic submission) -->
+                                    <form class="return-request-form" method="post" action="{% url 'create_return_request' item.id %}">
+                                        {% csrf_token %}
+                                        <textarea class="form-control mb-2" name="reason" placeholder="Reason for return" rows="1" required></textarea>
+                                        <button type="submit" class="btn btn-danger">Make Return Request</button>
+                                    </form>
+                                    {% else %}
+                                    <p>Return request already submitted.</p>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>You have no past orders.</p>
+{% endif %}
+</div>
+<script>
+    // Handle dynamic form submission for return requests
+    document.addEventListener('DOMContentLoaded', function () {
+        const forms = document.querySelectorAll('.return-request-form');
+        
+        forms.forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // Prevent default form submission
+    
+                const formData = new FormData(form);
+                const actionUrl = form.getAttribute('action');
+    
+                fetch(actionUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    }
+                })
+                .then(response => response.json())  // Assuming JSON response from the view
+                .then(data => {
+                    if (data.success) {
+                        // Update UI to reflect successful return request
+                        form.innerHTML = '<p class="text-success">Return request submitted successfully.</p>';
+                    } else {
+                        alert('An error occurred: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while submitting the return request.');
+                });
+            });
+        });
+    });
+    </script>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'dashboard/customer_dash.html' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block account_content %}
+
+<style>
+   
+
+@media(max-width:760px){
+    .form-container{
+        margin-top: 11rem !important;
+    }
+}
+</style>
+<div class="container mt-4 mb-5">
+   
+
+    <!-- Display form for editing user account details -->
+        <h3 class="mb-4">Edit Your Profile</h3>
+
+        
+        <!-- Display User Role -->
+        <div class="mb-3">
+            <label><strong>Your Role:</strong> {{ user_role }}</label>
+            
+        </div>
+        <form method="POST" action="{% url 'customer_profile' %}">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+                <label for="first_name">First Name:</label>
+                <input type="text" name="first_name" class="form-control" id="first_name" value="{{ user.first_name }}" required>
+            </div>
+            <div class="form-group mb-3">
+                <label for="last_name">Last Name:</label>
+                <input type="text" name="last_name" class="form-control" id="last_name" value="{{ user.last_name }}" required>
+            </div>
+            <div class="form-group mb-3">
+                <label for="email">Email (will be used as a Username):</label>
+                <input type="email" name="email" class="form-control" id="email" value="{{ user.email }}" required>
+            </div>
+            <div class="form-group mb-3">
+                <label for="phone_number">Phone Number:</label>
+                <input type="text" name="phone_number" class="form-control" id="phone_number" value="{{ user.phone_number }}" required>
+            </div>
+           
+            
+            <button type="submit" class="btn btn-primary">Update Details</button>
+        </form>
+
+    
+</div>
+
+{% endblock %}

@@ -1,0 +1,41 @@
+<!-- templates/admin/product_gallery.html -->
+
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h2>{{ product.name }} - Gallery</h2>
+<div>
+    <h3>Main Image</h3>
+    {% if product.image %}
+        <img src="{{ product.image.url }}" width="150" height="150" alt="Main Image">
+    {% else %}
+        <p>No Main Image</p>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="main-image-upload">Change Main Image:</label>
+        <input type="file" name="main_image" id="main-image-upload">
+        <button type="submit">Upload</button>
+    </form>
+</div>
+
+<h3>Gallery Images</h3>
+<div>
+    {% for image in images %}
+        <div style="display: inline-block; margin-right: 10px; margin-bottom: 10px;">
+            <img src="{{ image.image.url }}" width="100" height="100" alt="Gallery Image">
+            <form method="post" action="{% url 'admin:delete_gallery_image' image.pk %}">
+                {% csrf_token %}
+                <button type="submit">Delete</button>
+            </form>
+        </div>
+    {% endfor %}
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label for="gallery-image-upload">Add Gallery Image:</label>
+    <input type="file" name="gallery_image" id="gallery-image-upload">
+    <button type="submit">Upload</button>
+</form>
+{% endblock %}

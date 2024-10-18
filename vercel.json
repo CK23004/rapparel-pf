@@ -1,0 +1,26 @@
+{
+    "builds": [{
+        "src": "rapparel/wsgi.py",
+        "use": "@vercel/python",
+        "config": { "maxLambdaSize": "15mb", "runtime": "python3.9" }
+    },
+    {
+        "src": "staticfiles/**/*",
+        "use": "@vercel/static"
+      }
+]
+    
+    ,
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "rapparel/wsgi.py"
+        },
+        {
+            "src": "/static/(.*)",
+            "dest": "/staticfiles/$1"
+          }
+    ]
+}
+
+

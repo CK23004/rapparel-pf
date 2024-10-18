@@ -1,0 +1,62 @@
+{% extends 'base_auth.html' %}
+
+{% block title %}Sign in | Rapparel {% endblock %}
+
+{% block content %}
+
+<div class="form-container">
+    <h4 class="text-center mb-4">Login</h4>
+    <p class="text-center text-muted mb-4">Enter your email and password to log in</p>
+
+    <form id="loginForm" method="post" action="{% url 'login' %}?next={{ request.GET.next }}">
+        {% csrf_token %}
+        <!-- Email Input -->
+        <div class="mb-3">
+            <input type="email" id="email" name="email" class="form-control" placeholder="Email" required>
+        </div>
+
+        <!-- Password Input -->
+        <div class="mb-3">
+           <div class="input-group">
+            <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
+            <span class="input-group-text" onclick="togglePassword()">
+                <i class="bi bi-eye" id="togglePasswordIcon"></i>
+            </span>
+        </div>
+        </div>
+        <div class="mb-3 text-end">
+            <a href="{% url 'password_reset' %}" class="text-danger">Forgot Password?</a>
+        </div>
+
+        <!-- Login Button -->
+        <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
+    </form>
+
+  
+    <!-- Create Account Link -->
+    <p class="text-center">
+        Don't have an account? <a href="/signup" class="text-danger">Create an account</a>
+    </p>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePassword() {
+        const passwordField = document.getElementById('password');
+        const toggleIcon = document.getElementById('togglePasswordIcon');
+
+        // Toggle the input type between 'password' and 'text'
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.classList.remove('bi-eye');
+            toggleIcon.classList.add('bi-eye-slash'); // Change icon to 'eye-slash'
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.classList.remove('bi-eye-slash');
+            toggleIcon.classList.add('bi-eye'); // Change icon back to 'eye'
+        }
+    }
+</script>
+{% endblock %}

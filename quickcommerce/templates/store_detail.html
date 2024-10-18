@@ -1,0 +1,564 @@
+{% extends 'base_index.html' %}
+{% block title %}{{ store.name }} - Store Page{% endblock %}
+{% block extra_css %}
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/store.css' %}">
+  <style>
+    /* Popup Sidebar for Filters on Mobile */
+    @media (max-width: 768px) {
+      .filter-sidebar {
+        display: none;
+      }
+      .main-container {
+        margin-top: 11rem !important;
+      }
+
+      .store-banner {
+        height: 150px;
+      }
+
+      /* Responsive adjustments */
+      .nav-tabs .nav-link {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+      }
+
+      .nav-tabs .nav-link.active {
+        background-color: #f50057;
+        color: white;
+        border: none;
+      }
+
+      h1 {
+        font-size: 1.5rem !important;
+      }
+      .location {
+        margin-top: 0rem;
+      }
+      .location-eta {
+        margin-top: 1rem;
+      }
+      .location-eta select,
+      .location-eta span {
+        font-size: 1rem;
+      }
+
+      /* Adjust product card for mobile view to fit 2 per row */
+      .product-card {
+        width: 50%;
+        height: 200px;
+      }
+
+      .product-card img {
+        height: 100px;
+      }
+
+      .product-card .card-body {
+        padding: 10px;
+      }
+
+      .product-card .price {
+        font-size: 0.75rem;
+      }
+
+      .card-title {
+ font-size: 0.75rem;
+ max-width: 100px;
+ }
+
+      
+ .product-card .btn {
+ display: block;
+ padding: 2px 5px;
+ font-size: 0.85rem;
+ flex-direction:column;
+ }
+
+
+      .product-card .wishlist-icon {
+        font-size: 1.2rem;
+      }
+
+      #cardmob{
+ display: none;
+ }
+    }
+
+
+     /* Store Banner */
+     .store-banner {
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      height: 300px;
+      border-radius: 10px;
+    }
+
+    .store-banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    
+
+  </style>
+{% endblock %}
+
+{% block content %}
+
+<div class="container main-container mt-5" style="max-width: 1400px;">
+  <!-- Store Banner -->
+  <div class="store-banner">
+    <h1>{{ store.name }}</h1>
+    {% if store.banner_image %}
+      <img src="{{ store.banner_image.url }}" alt="{{ store.name }} Banner">
+    {% else %}
+      <img src="https://via.placeholder.com/1200x300" alt="Default Banner">
+    {% endif %}
+  </div>
+
+  <!-- Location and ETA Section -->
+   <!-- Location and ETA Section -->
+   <div class="location-eta">
+    <div class="location d-flex align-items-center">
+      <i class="bi bi-geo-alt-fill mr-2" style="font-size: 1.5rem; color: #f50057;"></i>
+      <div id="location-info">
+        <!-- Display store address -->
+        <span id="current-location">{{ store_address }}</span>
+      </div>
+    </div>
+    <div class="eta">
+      <!-- Display Estimated Arrival Time -->
+      <span>ETA: 
+        {% if estimated_arrival_time %}
+          {{ estimated_arrival_time|floatformat:0 }} min
+        {% else %}
+          -- min
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+
+
+
+<!-- Category Tabs -->
+<ul class="nav nav-tabs" id="categoryTab" role="tablist">
+  <!-- "All Products" tab -->
+  <li class="nav-item">
+    <a class="nav-link active" id="all-products-tab" data-toggle="tab" href="#all-products" role="tab" aria-controls="all-products" aria-selected="true">All Products</a>
+  </li>
+  
+  <!-- Dynamically generated tabs for each category -->
+  {% for category in categories %}
+  <li class="nav-item">
+    <a class="nav-link" id="{{ category.slug }}-tab" data-toggle="tab" href="#{{ category.slug }}" role="tab" aria-controls="{{ category.slug }}" aria-selected="false">{{ category.name }}</a>
+  </li>
+  {% endfor %}
+</ul>
+
+<button class="btn btn-outline-secondary float-right d-block d-md-none mb-3" data-toggle="modal" data-target="#filterModal">
+  Filters
+</button>
+
+
+<!-- Filter Sidebar for Mobile Popup -->
+<div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="filterModalLabel">Filters</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Filters content -->
+        <div class="accordion" id="filterAccordion">
+           <!-- Attribute Filters -->
+      {% for attribute in attributes %}
+      <div class="card">
+        <div class="card-header" id="headingAttributes{{ attribute.id }}">
+          <h5 class="mb-0">
+            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseAttributes{{ attribute.id }}" aria-expanded="false" aria-controls="collapseAttributes{{ attribute.id }}">
+              {{ attribute.name }}
+            </button>
+          </h5>
+        </div>
+        <div id="collapseAttributes{{ attribute.id }}" class="collapse show" aria-labelledby="headingAttributes{{ attribute.id }}" data-parent="#filterAccordion">
+          <div class="card-body">
+            {% for value in attribute.values.all %}
+            <input type="checkbox" class="attribute-filter" value="{{ value.id }}"> {{ value.value }}<br>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Price Filter -->
+      <div class="card">
+        <div class="card-header" id="headingTwo">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+              Price Range
+            </button>
+          </h5>
+        </div>
+        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#filterAccordion">
+          <div class="card-body">
+            <div class="price-range">
+              <input type="range" min="0" max="500" value="250" id="priceRange">
+            </div>
+            <div class="price-boxes mt-3">
+              <input type="text" id="minPrice" placeholder="Rs.0">
+              <input type="text" id="maxPrice" placeholder="Rs.500">
+            </div>
+          </div>
+        </div>
+      </div>
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Apply Filters</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Page Content -->
+<div class="row mt-5">
+  <!-- Filter Sidebar -->
+  <div class="col-md-3" id="cardmob">
+    <div class="accordion" id="filterAccordion">
+      <!-- Attribute Filters -->
+      {% for attribute in attributes %}
+      <div class="card">
+        <div class="card-header" id="headingAttributes{{ attribute.id }}">
+          <h5 class="mb-0">
+            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseAttributes{{ attribute.id }}" aria-expanded="false" aria-controls="collapseAttributes{{ attribute.id }}">
+              {{ attribute.name }}
+            </button>
+          </h5>
+        </div>
+        <div id="collapseAttributes{{ attribute.id }}" class="collapse show" aria-labelledby="headingAttributes{{ attribute.id }}" data-parent="#filterAccordion">
+          <div class="card-body">
+            {% for value in attribute.values.all %}
+            <input type="checkbox" class="attribute-filter" value="{{ value.id }}"> {{ value.value }}<br>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Price Filter -->
+      <div class="card">
+        <div class="card-header" id="headingTwo">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+              Price Range
+            </button>
+          </h5>
+        </div>
+        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#filterAccordion">
+          <div class="card-body">
+            <div class="price-range">
+              <input type="range" min="0" max="500" value="250" id="priceRange">
+            </div>
+            <div class="price-boxes mt-3">
+              <input type="text" id="minPrice" placeholder="Rs.0">
+              <input type="text" id="maxPrice" placeholder="Rs.500">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products Section -->
+  <div class="col-md-9">
+    <div class="tab-content" id="categoryTabContent">
+      <!-- "All Products" content -->
+      <div class="tab-pane fade show active" id="all-products" role="tabpanel" aria-labelledby="all-products-tab">
+        <div class="row">
+          {% for product in products %}
+          <div class="col-lg-4 col-md-6 mb-4 product-card" 
+               data-category="{{ product.category.id }}" 
+               data-price="{{ product.sale_price }}"
+               data-attributes="{{ product.attributes.all|join:',' }}">
+                <div class="card">
+                  <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                  <i data-product-slug="{{ product.slug }}" class="bi wishlist-icon {% if product.id in wishlisted_products %}bi-heart-fill active{% else %}bi-heart{% endif %}"></i>
+                  <a href="{% url 'product_detail' product.slug %}" class="text-decoration-none">
+                  <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <div class="price mb-2">Rs.{{ product.sale_price }}</div>
+                    <form action="{% url 'add_to_cart' %}" method="POST">
+                      {% csrf_token %}
+                      <input type="hidden" name="product_id" value="{{ product.id }}">
+                      <button class="btn btn-block">Add to Bag</button>
+                    </form>
+                  </div>
+                </div>
+              </a>
+              
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Dynamically generated content for each category -->
+      {% for category in categories %}
+      <div class="tab-pane fade" id="{{ category.slug }}" role="tabpanel" aria-labelledby="{{ category.slug }}-tab">
+        <div class="row">
+          {% for product in products %}
+          {% if product.category.id == category.id %}
+          <div class="col-lg-4 col-md-6 mb-4 product-card" 
+               data-category="{{ product.category.id }}" 
+               data-price="{{ product.sale_price }}"
+               data-attributes="{{ product.attributes.all|join:',' }}">
+              
+                <div class="card">
+                  <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                  <i data-product-slug="{{ product.slug }}" class="bi wishlist-icon {% if product.id in wishlisted_products %}bi-heart-fill active{% else %}bi-heart{% endif %}"></i>
+                  <a href="{% url 'product_detail' product.slug %}" class="text-decoration-none">
+                  <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <div class="price mb-2">Rs.{{ product.sale_price }}</div>
+                    <form action="{% url 'add_to_cart' %}" method="POST">
+                      {% csrf_token %}
+                      <input type="hidden" name="product_id" value="{{ product.id }}">
+                      <button class="btn btn-block">Add to Bag</button>
+                    </form>
+                  </div>
+                </div>
+              </a>
+              
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+    <!-- Products Section -->
+      <!-- Products Section -->
+      <!-- <div class="col-md-9 tab-content" id="product-list">
+        <div class="row">
+          {% for product in products %}
+          <div class="col-lg-4 col-md-6 mb-4 product-card" 
+               data-category="{{ product.category.id }}" 
+               data-price="{{ product.sale_price }}"
+               data-attributes="{{ product.attributes.all|join:',' }}">
+            <div class="card">
+              <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+              <i class="bi bi-bag cart-icon"></i>
+              <i class="bi bi-heart wishlist-icon"></i>
+              <div class="card-body">
+                <h5 class="card-title">{{ product.name }}</h5>
+                <div class="price mb-2">${{ product.sale_price }}</div>
+                <button class="btn btn-block">Add to cart</button>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div> -->
+  <!-- </div>
+</div>
+</div> -->
+<!-- Ensure jQuery is loaded first -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static 'js/store.js' %}"></script>
+
+<script>
+    // Filter products based on selected attributes, categories, and price
+    $(document).ready(function () {
+  
+      // Filter by attributes
+      $('.attribute-filter').on('change', function () {
+        let selectedAttributes = [];
+        $('.attribute-filter:checked').each(function () {
+          selectedAttributes.push($(this).val());
+        });
+  
+        $('.product-card').each(function () {
+          let productAttributes = $(this).data('attributes').split(',');
+          let showProduct = selectedAttributes.every(attr => productAttributes.includes(attr));
+  
+          if (showProduct) {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        });
+      });
+  
+      // Filter by category
+      $('.category-filter').on('change', function () {
+        let selectedCategories = [];
+        $('.category-filter:checked').each(function () {
+          selectedCategories.push($(this).val());
+        });
+  
+        $('.product-card').each(function () {
+          let productCategory = $(this).data('category');
+          if (selectedCategories.length === 0 || selectedCategories.includes(String(productCategory))) {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        });
+      });
+  
+       // Initialize the price range slider and inputs
+  $('#priceRange').on('input', function () {
+    let maxPrice = $(this).val();
+    $('#maxPrice').val(maxPrice);
+
+    filterProductsByPrice();
+  });
+
+  $('#minPrice, #maxPrice').on('change', function () {
+    let minPrice = parseFloat($('#minPrice').val()) || 0;
+    let maxPrice = parseFloat($('#maxPrice').val()) || 1000;
+
+    // Adjust the slider position
+    $('#priceRange').val(maxPrice);
+
+    filterProductsByPrice();
+  });
+
+  function filterProductsByPrice() {
+    let minPrice = parseFloat($('#minPrice').val()) || 0;
+    let maxPrice = parseFloat($('#maxPrice').val()) || 1000;
+
+    $('.product-card').each(function () {
+      let productPrice = parseFloat($(this).data('price'));
+
+      if (productPrice >= minPrice && productPrice <= maxPrice) {
+        $(this).show();
+      } else {
+        $(this).hide();
+      }
+    });
+  }
+
+
+
+  $('.wishlist-icon').on('click', function () {
+    const icon = $(this);
+    const productSlug = icon.data('product-slug');  // Get the product slug from the data attribute
+    const isActive = icon.hasClass('active');  // Check if the product is already in the wishlist
+    const url = isActive ? `/wishlist/remove/${productSlug}/` : `/wishlist/add/${productSlug}/`;  // Dynamic URL based on action
+    const method = isActive ? 'DELETE' : 'POST';  // Use DELETE for removing, POST for adding
+
+    icon.toggleClass('active');
+
+    if (icon.hasClass('active')) {
+        // If active, show filled heart
+        icon.removeClass('bi-heart').addClass('bi-heart-fill');  // Change to filled heart
+    } else {
+        // If not active, show outlined heart
+        icon.removeClass('bi-heart-fill').addClass('bi-heart');  // Change to outline heart
+    }
+
+    // AJAX request to add or remove the product from the wishlist
+    if (!isActive){
+    $.ajax({
+        url: url,
+        method: method,
+        data: {
+            product_slug: productSlug,
+            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()  // CSRF token for security
+        },
+        success: function (response) {
+            console.log(response.status);  // Optional: Display success message or feedback
+        },
+        error: function (error) {
+            console.error('Error:', error);
+            // Revert UI if the request fails
+            icon.toggleClass('active');
+            if (icon.hasClass('active')) {
+                icon.removeClass('bi-heart').addClass('bi-heart-fill');  // Change back to filled heart
+            } else {
+                icon.removeClass('bi-heart-fill').addClass('bi-heart');  // Change back to outline heart
+            }
+        }
+    });
+  }
+});
+document.querySelectorAll('.wishlist-icon').forEach(function (icon) {
+    icon.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        const productSlug = icon.getAttribute('data-product-slug');  // Get the product slug
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;  // CSRF token
+        const isActive = icon.classList.contains('active');  // Check if already in wishlist
+        const url = `/wishlist/remove/${productSlug}/`;  // Assuming you're removing from wishlist
+
+        // Toggle the UI before sending the request for instant feedback
+        icon.classList.toggle('active');
+
+        if (icon.classList.contains('active')) {
+            // Change to filled heart if active
+            icon.classList.remove('bi-heart');
+            icon.classList.add('bi-heart-fill');
+        } else {
+            // Change to outline heart if not active
+            icon.classList.remove('bi-heart-fill');
+            icon.classList.add('bi-heart');
+        }
+
+        // Send AJAX request to backend to remove from wishlist
+        const xhttp = new XMLHttpRequest();
+        xhttp.open('POST', url, true);
+        xhttp.setRequestHeader('X-CSRFToken', csrfToken);  // Pass the CSRF token
+        xhttp.setRequestHeader('X-Requested-With', 'XMLHttpRequest');  // Mark this as an AJAX request
+
+        xhttp.onreadystatechange = function () {
+            if (xhttp.readyState === 4 && xhttp.status === 200) {
+                const response = JSON.parse(xhttp.responseText);
+                console.log(response.status);  // Optionally log the status
+            } else if (xhttp.readyState === 4 && xhttp.status !== 200) {
+                console.error('Error:', xhttp.responseText);
+                // Revert the UI toggle if an error occurs
+                icon.classList.toggle('active');
+                if (icon.classList.contains('active')) {
+                    icon.classList.remove('bi-heart');
+                    icon.classList.add('bi-heart-fill');
+                } else {
+                    icon.classList.remove('bi-heart-fill');
+                    icon.classList.add('bi-heart');
+                }
+            }
+        };
+
+        // Send the request to the server
+        xhttp.send();
+    });
+});
+
+    });
+
+  </script>
+  
+{% endblock %}
