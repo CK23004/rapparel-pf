@@ -69,11 +69,116 @@
     max-width: 50rem; /* Same width as the form for consistency */
     margin-bottom: 20px; /* Adds some space between the messages and the form */
 }
+@media (max-width: 768px) {
+
+}
+/* General styling for all screens */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #dee2e6;
+}
+
+/* For larger screens (PC) */
+@media (min-width: 1024px) {
+    .tableres {
+        overflow-x: auto;
+    }
+
+    .table th, .table td {
+        font-size: 16px;
+    }
+}
+
+/* For tablet screens (768px to 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
+    .table th, .table td {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+
+/* For mobile screens (less than 768px) */
+@media (max-width: 767px) {
+    .tableres {
+        overflow-x: auto;
+        display: block;
+    }
+
+    .table {
+        width: 100%;
+        display: block;
+    }
+
+    /* Make the table scrollable horizontally */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table th, .table td {
+        display: block;
+        text-align: right;
+        padding: 10px;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    .table td::before {
+        content: attr(data-label); /* Add labels to the cells */
+        float: left;
+        font-weight: bold;
+        text-transform: capitalize;
+    }
+
+    .table th {
+        display: none; /* Hide table headers */
+    }
+
+    /* Styling for textarea inside form for mobile */
+    .return-request-form textarea {
+        width: 100%;
+        font-size: 14px;
+    }
+
+    /* Align buttons for mobile */
+    .return-request-form button {
+        width: 100%;
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 576px) {
+   #rowid{
+    margin-top: -11rem !important;
+   }
+   #proddetail{
+     width: 100%;
+     margin-top: -40rem;
+     height: 100%;
+   }
+  
+    
+}
+
+@media (max-width: 1200px) {}
+@media (max-width: 992px) {}
 
 
 </style>
 <div class="container-fluid">
-    <div class="row">
+    <div id="rowid" class="row">
         <!-- Sidebar with nav links -->
         <div class="col-md-3 col-lg-2 bg-light sidebar d-flex flex-column py-4 shadow-sm">
            
@@ -88,7 +193,7 @@
         </div>
 
         <!-- Main content area -->
-        <div class="col-md-9 col-lg-10 py-4 px-5">
+        <div id="proddetail" class="col-md-9 col-lg-10 py-4 px-5">
             {% if messages %}
         <div class="message-container">
             {% for message in messages %}

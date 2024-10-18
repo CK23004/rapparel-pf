@@ -154,6 +154,12 @@
     .modal-body ul li {
         padding: 5px 0;
     }
+    @media (max-width:768px) {
+
+        .row{
+            margin-top: 9rem;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -237,11 +243,13 @@
                     <input type="hidden" name="product_id" value="{{ product.id }}">
 
                     <!-- Quantity input and Add to Bag button side by side -->
-                    <div class="input-group me-2" style="max-width: 1000px; width: 90%;">
-                        <input type="number" name="quantity" value="1" class="form-control" min="1">
+                    <div class="d-flex " style="gap:10px;">
+                        <div class="input-group me-2" style="max-width: 1000px; width: 90%;">
+                            <input type="number" name="quantity" value="1" class="form-control" min="1">
+                        </div>
+    
+                        <button type="submit" class="btn btn-danger" style="width: 340px;">Add to Bag</button>
                     </div>
-
-                    <button type="submit" class="btn btn-danger" style="width: 500px;">Add to Bag</button>
                 </form>
             </div>
 

@@ -21,7 +21,8 @@
                     Order Status: {{ order.get_order_status_display }}</p>
 
                     <!-- Order Items -->
-                    <table class="table table-bordered mt-3">
+                   <div class="tableres">
+                    <table class="table responsive table-bordered mt-3">
                         <thead>
                             <tr>
                                 <th>Product</th>
@@ -54,6 +55,8 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                   </div>
+                    
                 </div>
             </div>
         </div>

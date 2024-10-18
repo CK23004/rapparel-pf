@@ -48,6 +48,15 @@ Checkout - Rapparel
         .container-fluid {
             margin-top: 11rem !important;
         }
+        
+    }
+    @media (max-width:768px){
+        .rowwe{
+            margin-top: 9rem ;
+        }
+        #checktabmsg{
+            margin-top: 14rem !important;
+        }
     }
 
 </style>
@@ -69,7 +78,7 @@ Checkout - Rapparel
 <!-- Product and Order Summary Section -->
 <section class="container mt-4">
 {% if user.is_authenticated %}
-<div class="row">
+<div class="row rowwe">
     <!-- Left Section: Product details -->
     <div class="col-md-8">
         <!-- Product Card -->

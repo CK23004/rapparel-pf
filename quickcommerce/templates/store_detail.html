@@ -46,11 +46,11 @@
       /* Adjust product card for mobile view to fit 2 per row */
       .product-card {
         width: 50%;
-        height: 200px;
+        height: 240px;
       }
 
       .product-card img {
-        height: 100px;
+        height: 127px;
       }
 
       .product-card .card-body {
@@ -240,7 +240,7 @@
     <div class="accordion" id="filterAccordion">
       <!-- Attribute Filters -->
       {% for attribute in attributes %}
-      <div class="card">
+      <div class="card p-3">
         <div class="card-header" id="headingAttributes{{ attribute.id }}">
           <h5 class="mb-0">
             <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseAttributes{{ attribute.id }}" aria-expanded="false" aria-controls="collapseAttributes{{ attribute.id }}">
