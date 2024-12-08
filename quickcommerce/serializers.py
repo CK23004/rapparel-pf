@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import User, ReturnRequest,Category, Brand, Store, Product, Inventory, Order, OrderItem,Banner, Coupon, Address, Payment, Wishlist, Cart, CartItem, AttributeValue, ProductImage
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-
+from django.db import transaction
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.urls import reverse
@@ -100,6 +100,9 @@ class StoreSerializer(serializers.ModelSerializer):
     #     return super().update(instance, validated_data)
 
 
+
+
+
 class AttributeValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttributeValue
@@ -181,22 +184,58 @@ class OrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['id', 'product', 'quantity', 'price']
 
+# class OrderSerializer(serializers.ModelSerializer):
+#     user = UserSerializer()
+#     store = StoreSerializer()
+#     order_items = OrderItemSerializer(many=True)
+
+#     class Meta:
+#         model = Order
+#         fields = ['id', 'user', 'store', 'address','total_amount', 'payment_status', 'order_status', 'payment_method', 'created_at', 'order_items','updated_at']
+
+#     def create(self, validated_data):
+#         items_data = validated_data.pop('order_items')
+#         order = Order.objects.create(**validated_data)
+#         for item_data in items_data:
+#             OrderItem.objects.create(order=order, **item_data)
+#         return order
+
+
 class OrderSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    store = StoreSerializer()
     order_items = OrderItemSerializer(many=True)
+    store_name = serializers.CharField(source='store.name', read_only=True)  # Example if you want the store name
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'store', 'address','total_amount', 'payment_status', 'order_status', 'payment_method', 'created_at', 'order_items','updated_at']
+        fields = [
+            'id', 'order_no', 'user', 'full_name', 'phone_number', 'email', 
+            'street_address', 'city', 'state', 'pin_code', 'country',
+            'store', 'store_name', 'total_amount', 'payment_status', 
+            'tracking_id', 'delivery_status', 'order_status', 
+            'placed_at', 'updated_at', 'order_items'
+        ]
+        read_only_fields = ['id', 'order_no', 'placed_at', 'updated_at']
 
     def create(self, validated_data):
+        """
+        Create an Order with nested OrderItems.
+        """
         items_data = validated_data.pop('order_items')
-        order = Order.objects.create(**validated_data)
-        for item_data in items_data:
-            OrderItem.objects.create(order=order, **item_data)
+        with transaction.atomic():  # Ensure atomicity
+            order = Order.objects.create(**validated_data)
+            order_items = [
+                OrderItem(order=order, **item_data) for item_data in items_data
+            ]
+            OrderItem.objects.bulk_create(order_items)
         return order
 
+    def validate_order_items(self, value):
+        """
+        Ensure the order has at least one item.
+        """
+        if not value:
+            raise serializers.ValidationError("Order must contain at least one item.")
+        return value
 
 
 class InventorySerializer(serializers.ModelSerializer):

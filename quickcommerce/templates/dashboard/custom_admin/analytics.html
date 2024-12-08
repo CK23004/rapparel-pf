@@ -1,0 +1,173 @@
+{% extends 'dashboard/custom_admin/base_dash.html' %}
+
+{% block title %}Analytics & Reports{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container pt-5">
+    <h2 class="mb-4 text-center">Analytics & Reports</h2>
+
+    <!-- Date Filter Form -->
+    <form method="GET" action="{% url 'analytics_view' %}" class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label for="start_date" class="form-label">Start Date:</label>
+            <input type="date" class="form-control" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+        </div>
+        <div class="col-md-3">
+            <label for="end_date" class="form-label">End Date:</label>
+            <input type="date" class="form-control" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+        </div>
+        <div class="col-md-3">
+            <label for="group_by" class="form-label">Group By:</label>
+            <select name="group_by" class="form-select">
+                <option value="day" {% if date_grouping == 'day' %}selected{% endif %}>Day</option>
+                <option value="month" {% if date_grouping == 'month' %}selected{% endif %}>Month</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </form>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-bg-light mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Orders</h5>
+                    <p class="card-text h3">{{ total_orders }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-light mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Revenue (Completed Orders)</h5>
+                    <p class="card-text h3">₹{{ total_revenue|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-light mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Commission</h5>
+                    <p class="card-text h3">₹{{ total_commission|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Line Charts Section -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Orders Over Time</h5>
+                    <canvas id="ordersOverTimeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Revenue Over Time</h5>
+                    <canvas id="revenueOverTimeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Most Selling Products Section -->
+    <div class="row mt-4">
+        <!-- Pie Chart Column -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Top 10 Selling Products</h5>
+                    <canvas id="productSalesChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Product List Column -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body overflow-auto" style="max-height: 400px;">
+                    <h5 class="card-title">All Products and Sales Count</h5>
+                    <ul class="list-group">
+                        {% for item in product_sales %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>{{ item.product__name }}</strong>
+                            <span class="badge bg-primary rounded-pill">{{ item.total_sales }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Top 10 Product Sales Pie Chart
+    const top10Products = [{% for item in product_sales|slice:":10" %}'{{ item.product__name }}',{% endfor %}];
+    const top10Sales = [{% for item in product_sales|slice:":10" %}{{ item.total_sales }},{% endfor %}];
+
+    new Chart(document.getElementById('productSalesChart'), {
+        type: 'pie',
+        data: {
+            labels: top10Products,
+            datasets: [{
+                data: top10Sales,
+                backgroundColor: [
+                '#A1C4FD', '#C2F0C2', '#FFB3B3', '#D1C7E2', '#F2D1D1', 
+                '#D8E8F5', '#F1D1B8', '#C5D1E1', '#E2F0F1', '#C8C8F9'
+            ]
+            }]
+        }
+    });
+
+    // Orders Over Time Line Chart
+    const ordersLabels = [{% if date_grouping == 'month' %}
+        {% for order in order_dates %}'{{ order.month|date:"F Y" }}',{% endfor %}
+    {% else %}
+        {% for order in order_dates %}'{{ order.day|date:"Y-m-d" }}',{% endfor %}
+    {% endif %}];
+    const ordersData = [{% for order in order_dates %}{{ order.order_count }},{% endfor %}];
+
+    new Chart(document.getElementById('ordersOverTimeChart'), {
+    type: 'line',
+    data: {
+        labels: ordersLabels,
+        datasets: [{
+            label: 'Orders Over Time',
+            data: ordersData,
+            borderColor: '#A1C4FD', // soft blue
+            borderWidth: 2
+        }]
+    }
+});
+
+    // Revenue Over Time Line Chart
+    const revenueLabels = [{% if date_grouping == 'month' %}
+        {% for revenue in daily_revenue %}'{{ revenue.month|date:"F Y" }}',{% endfor %}
+    {% else %}
+        {% for revenue in daily_revenue %}'{{ revenue.day|date:"Y-m-d" }}',{% endfor %}
+    {% endif %}];
+    const revenueData = [{% for revenue in daily_revenue %}{{ revenue.total_revenue|floatformat:2 }},{% endfor %}];
+
+    new Chart(document.getElementById('revenueOverTimeChart'), {
+    type: 'line',
+    data: {
+        labels: revenueLabels,
+        datasets: [{
+            label: 'Revenue Over Time',
+            data: revenueData,
+            borderColor: '#C2F0C2', // mint green
+            borderWidth: 2
+        }]
+    }
+});
+</script>
+{% endblock %}

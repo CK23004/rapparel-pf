@@ -93,22 +93,22 @@
       /* Navbar search bar styling */
       #search-bar {
         
-        width: 500px;  /* Extend the width */
-        border-radius: 25px;  /* Make the search bar rounded */
-        border: 1px solid #ddd;  /* Subtle border */
+        width: 300px;  /* Extend the width */
+        /* border-radius: 25px;  Make the search bar rounded */
+        /* border: 1px solid #ddd;  Subtle border */
         padding: 10px 20px;  /* Add some padding for a better look */
         /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);   */
         background-color: #f5f5f6;
-        transition: all 0.3s ease-in-out;  /* Smooth transition for focus effect */
+        /* transition: all 0.3s ease-in-out;  Smooth transition for focus effect */
       }
 
       
       /* Change appearance on focus */
-      #search-bar:focus {
-        outline: none;  /* Remove default outline */
-        border-color: #ff3d58;  /* Highlight border on focus (pinkish) */
-        box-shadow: 0 4px 10px rgba(255, 107, 129, 0.4); 
-      }
+      /* #search-bar:focus { */
+        /* outline: none;  Remove default outline */
+        /* border-color: #ff3d58;  Highlight border on focus (pinkish) */
+        /* box-shadow: 0 4px 10px rgba(255, 107, 129, 0.4);  */
+      /* } */
       
 
       .navbar{
@@ -127,9 +127,12 @@
         color: #555;         /* Adjust the icon color */
     }
 
-    #location-icon i {
 
-      font-size: 0.75rem !important; /* Adjust the icon size (equivalent to small text) */
+
+
+    #location-icon-mobile i {
+
+      font-size: 1rem !important; /* Adjust the icon size (equivalent to small text) */
       color: #555;         /* Adjust the icon color */
   }
       #location-form #detect-location-btn {
@@ -150,9 +153,9 @@
         border-bottom-left-radius: 20px;
          border-bottom-right-radius: 0;
        } */
-       #search-form {
+       /* #search-form {
         display: none !important;
-    }
+    } */
       
       /* Font icon size and color change on hover */
       .navbar .bi {
@@ -166,9 +169,9 @@
       }
           
           /* Search icon inside the input field */
-      .position-relative {
+      /* .position-relative {
         position: relative;
-      }
+      } */
       
       .search-icon {
         position: absolute;
@@ -375,15 +378,15 @@
       #search-bar-mobile {
         font-size: 0.75rem;
         width: 100%;
-        border-radius: 25px;
+        /* border-radius: 25px; */
         padding-right: 40px; /* Space for the search icon */
       }
       
-      #search-bar-mobile:focus {
+      /* #search-bar-mobile:focus {
         outline: none;
         border-color: #ff3d58;
         box-shadow: 0 4px 10px rgba(255, 107, 129, 0.4);
-      }
+      } */
       
       /* Search icon inside the input field */
       .position-relative {

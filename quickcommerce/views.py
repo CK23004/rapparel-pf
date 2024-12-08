@@ -6,15 +6,15 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from .forms import PasswordResetForm
 
 from rest_framework import status, generics,serializers
-from django.db.models import Sum, F
-from .models import Banner,Coupon ,Inventory,ReturnRequest,Product,ProductImage, Category, Brand, Cart, CartItem, Order, Wishlist, Address, User, OrderItem, Store, Attribute
+from django.db.models import Sum, F,Count
+from .models import Banner,Coupon ,Inventory,ReturnRequest,Product,ProductImage, Category, Brand, Cart, CartItem, Order, Wishlist, Address, User, OrderItem, Store, Attribute, AttributeValue
 from .serializers import (
     BannerSerializer, ProductSerializer, CategorySerializer, BrandSerializer,
     CartSerializer, CartItemSerializer, OrderSerializer, WishlistSerializer, 
     AddressSerializer, UserSerializer, StoreSerializer, CouponSerializer, ReturnRequestSerializer ,StatisticsSerializer, InventorySerializer)
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
-import datetime, requests
+import datetime, requests, json
 from django.core.mail import send_mail, EmailMessage
 from django.utils.html import strip_tags
 from django.shortcuts import render 
@@ -25,7 +25,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
 from django.utils.encoding import force_bytes,force_str
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group, AnonymousUser
 from django.contrib.auth import get_user_model
 
@@ -43,14 +43,13 @@ from django.utils import timezone
 from django.db import IntegrityError  # Import IntegrityError to handle duplicates
 from django.utils.http import url_has_allowed_host_and_scheme
 
-
-
+from django.db.models.functions import TruncDay, TruncMonth
 from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import pandas as pd
-
-
+from django.core.paginator import Paginator
+from django.db.models import Q
 # #home page
 # class LandingPageView(APIView):
 #     permission_classes = [AllowAny]
@@ -569,12 +568,17 @@ def product_detail_view(request, slug):
     # Fetch similar products
     similar_products = product.get_similar_products()
     gallery_images = ProductImage.objects.filter(product=product)
-    is_wishlisted = Wishlist.objects.filter(user=request.user, product=product).exists()
+    if request.user.is_authenticated:
+        is_wishlisted = Wishlist.objects.filter(user=request.user, product=product).exists()
+    else:
+        is_wishlisted = False
     discount_percentage = 0
     if product.sale_price < product.mrp:
         discount_percentage = ((product.mrp - product.sale_price) / product.mrp) * 100
 
-
+    product.name = product.name.title()
+    product.brand.name = product.brand.name.title() 
+    product.category.name = product.category.name.title()
     # Pass the product, gallery images, and similar products to the template
     context = {
         'product': product,
@@ -664,7 +668,7 @@ def remove_from_wishlist(request, product_slug):
 
 @require_GET  # Only accept GET requests
 def search_products(request):
-    query = request.GET.get('q', None)  # Get the query parameter from the request
+    query = request.GET.get('query', None)  # Get the query parameter from the request
 
     if not query or len(query) < 2:
         return JsonResponse({'error': 'Please enter at least 2 characters'}, status=400)
@@ -674,12 +678,12 @@ def search_products(request):
     
     # Prepare the product data to be returned in JSON format
     product_list = [{
-        'name': product.name,
+        'name': product.name.title(),  # Capitalize the product name
+        'brand': product.brand.name.title() if product.brand else None,  # Capitalize the brand name if it exists
         'price': product.sale_price,
         'image': product.image.url,
         'slug': product.slug
     } for product in products]
-    print(product_list)
     return JsonResponse({'products': product_list}, status=200)
 
 
@@ -853,13 +857,15 @@ class AddToCartView(View):
         # Retrieve the product ID and quantity from the POST request
         product_id = request.POST.get('product_id')
         quantity = int(request.POST.get('quantity', 1))  # Default to 1 if quantity is not provided
-
+        # Log the quantity for debugging
+        print(f"Received quantity: {quantity}")
         # Get the product and the user's cart
         product = get_object_or_404(Product, id=product_id)
         cart, created = Cart.objects.get_or_create(user=request.user)
 
         # Check if there are existing items in the cart
         if cart.cart_items.exists():
+            print("exists")
             # Get the store of the new product
             new_product_store = product.store
 
@@ -873,35 +879,46 @@ class AddToCartView(View):
 
         # Add the product to the cart
         cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-        cart_item.quantity += quantity  # Increment quantity if item already exists
+        print(cart_item, created)
+        if created:
+            # If the item was just created, set the quantity directly
+            cart_item.quantity = quantity
+        else:
+            # If the item already exists, increment the quantity
+            cart_item.quantity += quantity
+
+        cart_item.save()
+        cart.save()
+        # Log the quantity for debugging
+        print(f"Received quantity: {cart_item.quantity}")
         cart_item.save()
         cart.save()
 
         # Redirect to cart page or any other page
         return redirect('cart_checkout')
 
-# def send_order_confirmation_email(order, cart_items, user_email):
-#     # Prepare the email context with order and cart details
-#     context = {
-#         'order': order,
-#         'cart_items': cart_items,
-#         'total_amount': order.total_amount,
-#         'address': order.address,
-#     }
+def send_order_confirmation_email(order, cart_items, user_email):
+    # Prepare the email context with order and cart details
+    context = {
+        'order': order,
+        'cart_items': cart_items,
+        'total_amount': order.total_amount,
+        'address': order.address,
+    }
 
-#     # Render the HTML email template
-#     html_content = render_to_string('emails/order_confirmation.html', context)
-#     text_content = strip_tags(html_content)  # Fallback to plain text if HTML is not supported
+    # Render the HTML email template
+    html_content = render_to_string('emails/order_confirmation.html', context)
+    text_content = strip_tags(html_content)  # Fallback to plain text if HTML is not supported
 
-#     # Create the email message
-#     subject = f"Order Confirmation - #{order.id}"
-#     from_email = settings.DEFAULT_FROM_EMAIL
-#     recipient_list = [user_email, settings.ADMIN_EMAIL]
+    # Create the email message
+    subject = f"Order Confirmation - #{order.id}"
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list = [user_email, settings.ADMIN_EMAIL]
 
-#     # Send the email to both user and admin
-#     email = EmailMultiAlternatives(subject, text_content, from_email, recipient_list)
-#     email.attach_alternative(html_content, "text/html")
-#     email.send()
+    # Send the email to both user and admin
+    email = EmailMultiAlternatives(subject, text_content, from_email, recipient_list)
+    email.attach_alternative(html_content, "text/html")
+    email.send()
 
 
 
@@ -1042,6 +1059,7 @@ def update_or_delete_cart_item(request):
 
         if action == 'update':
             print('update')
+            print(cart_item.quantity)
             # Update quantity
             try:
                 new_quantity = int(request.POST.get('quantity'))
@@ -1051,7 +1069,7 @@ def update_or_delete_cart_item(request):
                 return JsonResponse({'error': 'Invalid quantity provided.'}, status=400)
 
         elif action == 'delete':
-            print('here')
+            print('delete')
             # Delete the cart item
             cart_item.delete()
         else:
@@ -1119,6 +1137,13 @@ def add_address(request):
         postal_code = request.POST.get('postal_code')
         country = request.POST.get('country')
 
+        full_address = f"{street_address}, {city}, {state}, {postal_code}, {country}"
+
+        # Call the ola_geocode function to get latitude and longitude
+        lat, lon =  ola_geocode(full_address)  
+
+        if lat is None or lon is None or lat == '' or lon == '':
+            lat, lon = '', 
         # Save the new address
         address = Address.objects.create(
             user=request.user,
@@ -1126,7 +1151,9 @@ def add_address(request):
             city=city,
             state=state,
             postal_code=postal_code,
-            country=country
+            country=country,
+            latitude=lat,
+            longitude=lon
         )
         addresses = Address.objects.filter(user=request.user)
         # Return a JSON response with the new address data
@@ -1177,7 +1204,7 @@ class ApplyCouponView(View):
                 'discount_amount': round(discount_amount, 2),
                 'total_amount': round(total_amount, 2)
             })
-
+            
         except Coupon.DoesNotExist:
             return JsonResponse({'error': 'Invalid coupon code'}, status=400)
 
@@ -1193,12 +1220,10 @@ def place_order_ajax(request):
             address_id = request.POST.get('address_id')
             total_amount = request.POST.get('total_amount')
             address = get_object_or_404(Address, id=address_id, user=user)
-
             # Get user details from the form
             full_name = request.POST.get('full_name')
             email = request.POST.get('email')
             phone_number = request.POST.get('phone_number')
-
             # Get the cart and calculate the total amount
             cart = Cart.objects.get(user=user)
             cart_items = CartItem.objects.filter(cart=cart)
@@ -1207,6 +1232,7 @@ def place_order_ajax(request):
             # total_amount += delivery_charges
             if not cart_items.exists():
                 return JsonResponse({'error': 'Your cart is empty.'}, status=400)
+
             # Create the order
             order = Order.objects.create(
                 user=user,
@@ -1220,11 +1246,10 @@ def place_order_ajax(request):
                 country=address.country,
                 total_amount=total_amount,
                 store= cart_items[0].product.store,
-                delivery_status = 'Pending',
-                order_status='Pending',
-                payment_status='Pending'
+                delivery_status = 'pending',
+                order_status='pending',
+                payment_status='pending'
             )
-
             # Create order items
             for item in cart_items:
                 OrderItem.objects.create(
@@ -2341,7 +2366,557 @@ def store(request):
 #dashboard views
 @login_required
 def base_dash(request):
-    return render(request, 'dashboard/base_dash.html')
+    return render(request, 'dashboard/custom_admin/base_dash.html')
+
+
+# @login_required
+# def products_dash(request):
+#     if request.user.groups.filter(name='Customer').exists():
+#         return redirect('home')
+#     is_admin = request.user.groups.filter(name='Admin').exists()
+
+#     if request.method == 'POST':
+#         product_id = request.POST.get('product_id', None)
+#         name = request.POST.get('name')
+#         mrp = request.POST.get('mrp')
+#         sale_price = request.POST.get('sale_price')
+#         inventory = request.POST.get('inventory')
+#         description = request.POST.get('description')
+#         category_id = request.POST.get('category')
+#         brand_id = request.POST.get('brand')
+
+#         if product_id:
+#             # Edit existing product
+#             product = get_object_or_404(Product, id=product_id)
+#         else:
+#             # Create new product
+#             product = Product()
+
+#         # Update product fields
+#         product.name = name
+#         product.mrp = mrp
+#         product.sale_price = sale_price
+#         product.inventory = inventory
+#         product.description = description
+#         product.category = category_id  # Set category
+#         product.brand = brand_id  # Set brand
+
+#         # Handle primary image
+#         primary_image = request.FILES.get('primary_image')  # Get primary image from the form
+#         if primary_image:
+#             product.image = primary_image  # Assuming there's a primary_image field in your Product model
+
+#         product.save()
+
+#         # Clear existing attribute values for the product
+#         product.attributes.clear()
+
+#         # Handle product attributes
+#         attribute_values = request.POST.getlist('attributes')
+#         for value_id in attribute_values:
+#             attribute_value = get_object_or_404(AttributeValue, id=value_id)
+#             product.attributes.add(attribute_value)
+
+#         # Handle gallery images
+#         gallery_images = request.FILES.getlist('gallery')
+#         for img in gallery_images:
+#             ProductImage.objects.create(product=product, image=img)
+
+#         return redirect('products_dash')
+
+#     # Fetch products, brands, and categories based on user group
+#     if is_admin:
+#         products = Product.objects.all()
+#         categories = Category.objects.all()
+#         brands = Brand.objects.all()
+#     else:
+#         store = Store.objects.filter(owner_name=request.user)
+#         products = Product.objects.filter(store__in=store)
+#         categories = Category.objects.filter(stores__in=store)  # Adjusted to use ManyToManyField
+#         brands = Brand.objects.filter(stores__in=store)
+
+#     attributes = Attribute.objects.all()
+#     attribute_values = AttributeValue.objects.all()
+
+#     return render(request, 'dashboard/custom_admin/products_dash.html', {
+#         'products': products,
+#         'categories': categories,
+#         'brands': brands,
+#         'attributes': attributes,
+#         'attribute_values': attribute_values,
+#     })
+
+
+
+@login_required
+def list_products(request):
+    if request.user.groups.filter(name='Customer').exists():
+        return redirect('home')
+
+    is_admin = request.user.groups.filter(name='Admin').exists()
+
+    # Fetch products, brands, and categories based on user group
+    if is_admin:
+        products = Product.objects.all()
+        categories = Category.objects.all()
+        brands = Brand.objects.all()
+    else:
+        store = Store.objects.filter(owner_name=request.user)
+        products = Product.objects.filter(store__in=store)
+        categories = Category.objects.filter(stores__in=store)  # Adjusted to use ManyToManyField
+        brands = Brand.objects.filter(stores__in=store)
+
+    attributes = Attribute.objects.all()
+    attribute_values = AttributeValue.objects.all()
+
+    return render(request, 'dashboard/custom_admin/products_list.html', {
+        'products': products,
+        'categories': categories,
+        'brands': brands,
+        'attributes': attributes,
+        'attribute_values': attribute_values,
+    })
+
+
+@login_required
+def add_or_edit_product(request, product_id=None):
+    if request.user.groups.filter(name='Customer').exists():
+        return redirect('home')
+
+    is_admin = request.user.groups.filter(name='Admin').exists()
+    is_store_owner = request.user.groups.filter(name='Store Owner').exists()
+
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        mrp = request.POST.get('mrp')
+        sale_price = request.POST.get('sale_price')
+        inventory = request.POST.get('inventory')
+        description = request.POST.get('description')
+        category_id = request.POST.get('category')
+        brand_id = request.POST.get('brand')
+        store_id = request.POST.get('store')
+        sku = request.POST.get('sku')
+        category = Category.objects.filter(id=category_id)
+        brand = Brand.objects.filter(id=brand_id)
+        store = Store.objects.filter(id=store_id)
+        if product_id:
+            # Edit existing product
+            product = get_object_or_404(Product, id=product_id)
+            messages.success(request, 'Product updated successfully')
+        else:
+            # Create new product
+            product = Product()
+            messages.success(request, 'Product created successfully')
+
+        # Update product fields
+        product.name = name
+        product.store=store[0]
+        product.sku = sku
+        product.mrp = mrp
+        product.sale_price = sale_price
+        product.inventory = inventory
+        product.description = description
+        product.category = category[0]
+        product.brand = brand[0]
+
+        # Handle primary image
+        primary_image = request.FILES.get('primary_image')
+        if primary_image:
+            product.image = primary_image
+
+        product.save()
+
+        # Clear existing attribute values for the product
+        product.attributes.clear()
+
+        # Handle product attributes
+        attribute_values = request.POST.getlist('attributes')
+        for value_id in attribute_values:
+            attribute_value = get_object_or_404(AttributeValue, id=value_id)
+            product.attributes.add(attribute_value)
+
+        # Handle gallery images
+        gallery_images = request.FILES.getlist('gallery')
+        for img in gallery_images:
+            ProductImage.objects.create(product=product, image=img)
+
+
+        return redirect('edit_product', product_id=product.id)
+
+    # Fetch categories, brands, attributes, and attribute values
+    categories = Category.objects.all() if is_admin else Category.objects.filter(stores=store)
+    brands = Brand.objects.all() if is_admin else Brand.objects.filter(stores=store)
+    attributes = Attribute.objects.all()
+    attribute_values = AttributeValue.objects.all()
+    stores = Store.objects.all()
+    product = None
+    if product_id:
+        product = get_object_or_404(Product, id=product_id)
+
+
+
+    if is_admin:
+        stores = Store.objects.all()
+    elif is_store_owner:
+        stores = Store.objects.filter(owner_name=request.user) 
+
+    return render(request, 'dashboard/custom_admin/product_add_edit.html', {
+        'product': product,
+        'stores': stores,
+        'categories': categories,
+        'brands': brands,
+        'attributes': attributes,
+        'attribute_values': attribute_values,
+    })
+
+
+@require_POST
+def delete_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    ProductImage.objects.filter(product=product).delete()
+    product.delete()
+    messages.success(request, "Product and its images have been successfully deleted.")
+
+    # Redirect to a success page, for example, the product list page
+    return redirect('products_dash')
+
+
+
+
+@login_required
+def orders_page(request):
+    if not request.user.is_staff:
+        return render(request, 'errors/403.html', status=403)
+
+    # Fetch search query if provided
+    search_query = request.GET.get('search', '').strip()
+    orders = Order.objects.all()
+
+    # Apply search filters if a query exists
+    if search_query:
+        orders = orders.filter(
+            Q(order_no__icontains=search_query) |
+            Q(full_name__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(phone_number__icontains=search_query)  # Added search by phone number
+        )
+
+    # Apply pagination
+    paginator = Paginator(orders, 15)  # Show 15 orders per page
+    page_number = request.GET.get('page', 1)
+    try:
+        page_obj = paginator.get_page(page_number)
+    except Exception:
+        page_obj = None  # Handle invalid page gracefully
+
+    # Render the HTML page
+    return render(request, 'dashboard/custom_admin/orders_dash.html', {
+        'page_obj': page_obj,
+        'search_query': search_query,
+    })
+
+
+def serialize_order(order):
+    return {
+        'id': order.id,
+        'order_no': order.order_no,
+        'full_name': order.full_name,
+        'total_amount': order.total_amount,
+        'order_status': order.order_status,
+    }
+
+
+@login_required
+@user_passes_test(lambda user: user.is_authenticated and not user.groups.filter(name='Customer').exists(), login_url='accounts/login/')
+def ajax_orders(request):
+    # Fetch search query if provided
+    search_query = request.GET.get('search', '').strip()
+    orders = Order.objects.all()
+
+    # Apply search filters if a query exists
+    if search_query:
+        orders = orders.filter(
+            Q(order_no__icontains=search_query) |
+            Q(full_name__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(order_status__icontains=search_query) |
+            Q(total_amount__icontains=search_query) |
+            Q(delivery_status__icontains=search_query)  # Added search by phone number
+        )
+
+    # Apply pagination
+    paginator = Paginator(orders, 15)  # Show 15 orders per page
+    page_number = request.GET.get('page', 1)
+    try:
+        page_obj = paginator.get_page(page_number)
+    except Exception:
+        return JsonResponse({'error': 'Invalid page number'}, status=400)
+
+    # Prepare data for response
+    orders_data = [serialize_order(order) for order in page_obj]
+    response = {
+        'orders': orders_data,
+        'pagination': {
+            'has_next': page_obj.has_next(),
+            'has_previous': page_obj.has_previous(),
+            'current_page': page_obj.number,
+            'total_pages': paginator.num_pages,
+        }
+    }
+    return JsonResponse(response, status=200) 
+
+
+@login_required
+def order_details(request, order_id):
+    # Fetch order details by ID
+    order = get_object_or_404(Order, id=order_id)
+
+    # Returning order details as JSON for frontend use (if needed)
+    order_items = [{
+        'product': item.product.name,
+        'quantity': item.quantity,
+        'price': item.price,
+        'total_price': item.get_total_price()
+    } for item in order.order_items.all()]
+
+    order_data = {
+        'id':order.id,
+        'order_id': order.order_no,
+        'customer': order.full_name,
+        'email': order.email,
+        'phone_number': order.phone_number,
+        'address': f"{order.street_address}, {order.city}, {order.state}, {order.pin_code}, {order.country}",
+        'total_amount': order.total_amount,
+        'payment_status': order.payment_status,
+        'order_status': order.order_status,
+        'tracking_id': order.tracking_id,
+        'delivery_status': order.delivery_status,
+        'order_items': order_items,
+        'placed_at':order.placed_at
+    }
+
+    return JsonResponse(order_data)
+    
+@login_required
+def update_order_status(request, order_id):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized access'}, status=403)
+    
+    order = get_object_or_404(Order, id=order_id)
+
+    # Only allow updating status for 'pending' orders
+    if order.order_status.lower() != 'pending':
+        return JsonResponse({'error': 'Order cannot be modified'})
+    print('s1')
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'accept':
+            print('s2')
+            order.order_status = 'Processing'
+            order.save()
+            return JsonResponse({'message': 'Order accepted successfully'})
+        elif action == 'reject':
+            print('s3')
+            order.order_status = 'Cancelled'
+            order.save()
+            return JsonResponse({'message': 'Order rejected successfully'})
+        else:
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+
+@login_required
+def get_new_pending_orders(request):
+    try:
+        # Fetch the first new pending order
+        new_order_count = Order.objects.filter(order_status='pending').count()
+        new_order = Order.objects.filter(order_status='pending').order_by('-placed_at').first()
+        
+
+        if new_order:
+            # You may return only specific fields you need for the popup
+            order_data = {
+                'id': new_order.id,
+                'order_no': new_order.order_no,
+                'customer': new_order.full_name,
+                'total_amount': new_order.total_amount,
+                'order_status': new_order.order_status,
+                'payment_status': new_order.payment_status,
+                'placed_at':new_order.placed_at,
+                'order_items': [{
+                    'product': item.product.name,
+                    'quantity': item.quantity,
+                    'total_price': item.quantity * item.price
+                } for item in new_order.order_items.all()]
+            }
+
+            return JsonResponse({'success': True, 'new_order_count':new_order_count , 'new_order': order_data})
+        else:
+            return JsonResponse({'success': False, 'message': 'No new orders found'})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@login_required
+def admin_return_requests(request):
+    
+    if request.user.groups.filter(name='Store Owner').exists():
+        stores = Store.objects.filter(owner_name=request.user)
+        print('store_owner')
+    elif request.user.groups.filter(name='Admin').exists():
+        stores = Store.objects.all()
+
+    # Get return requests for all products in the stores
+    return_requests = ReturnRequest.objects.filter(order_item__product__store__in=stores)
+
+    return render(request, 'dashboard/custom_admin/return_requests_dash.html', {'return_requests': return_requests})
+
+
+@login_required
+def admin_profile(request):
+    user = request.user
+
+    # Get the user's group (role)
+    user_groups = user.groups.all()
+    user_role = user_groups[0].name if user_groups.exists() else 'No Role Assigned'
+
+    # Get stores owned by the user (Store Owner role)
+    stores = Store.objects.filter(owner_name=user)
+
+    if request.method == 'POST':
+        # Get the submitted data
+        email = request.POST.get('email')
+        phone_number = request.POST.get('phone_number')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        store_id = request.POST.get('store_id')
+
+        try:
+            # Update user details
+            if email:
+                user.email = email
+                user.phone_number = phone_number
+                user.first_name = first_name
+                user.last_name = last_name
+                user.save()
+            if store_id:
+                store = get_object_or_404(Store, id=store_id)
+                if store:
+                    if 'display_image' in request.FILES:
+                        store.display_image = request.FILES['display_image']
+                    if 'banner_image' in request.FILES:
+                        store.banner_image = request.FILES['banner_image']
+                    store.save()
+
+            return redirect('admin_profile')
+
+        except IntegrityError:
+            # Handle the duplicate email error
+            message = "Email is already registered with another account."
+            return render(
+                request,
+                'dashboard/custom_admin/admin_profile.html',
+                {
+                    'user': user,
+                    'user_role': user_role,
+                    'stores': stores,
+                    'message': message,
+                }
+            )
+
+    return render(
+        request,
+        'dashboard/custom_admin/admin_profile.html',
+        {'user': user, 'user_role': user_role, 'stores': stores}
+    )
+
+@login_required
+@user_passes_test(lambda user: user.is_authenticated and not user.groups.filter(name='Customer').exists(), login_url='accounts/login/')
+def analytics_view(request):
+    # Set default date range to the current month
+    start_date = request.GET.get('start_date', datetime.datetime.now().replace(day=1))  # Start of the current month
+    end_date = request.GET.get('end_date', datetime.datetime.now())  # Current date and time
+
+    # Check if start_date and end_date are strings, and parse them if they are
+    if isinstance(start_date, str):
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+
+    if isinstance(end_date, str):
+        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+
+    # Fetch stores owned by the current user (if any)
+    stores = Store.objects.filter(owner_name=request.user)
+
+    # If no stores are found for the user, show all stores
+    if not stores.exists():
+        stores = Store.objects.all()
+
+    # Fetch completed orders for these stores within the selected date range
+    orders = Order.objects.filter(store__in=stores, placed_at__gte=start_date, placed_at__lte=end_date)
+
+    # Example Analytics: Total Orders and Total Revenue
+    total_orders = orders.count()
+    total_revenue = orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+
+    # Calculate Total Commission Earned based on the store commission rate
+    commission_data = orders.values('store').annotate(
+    total_store_revenue=Sum('total_amount'),
+    commission_rate=F('store__commission_rate')
+    )
+    total_commission = sum(item['total_store_revenue'] * (item['commission_rate'] / 100) for item in commission_data)
+    # Check if the user wants to view by day or month
+    date_grouping = request.GET.get('group_by', 'day')  # Default to 'day'
+
+    # Get daily or monthly order count based on user preference
+    if date_grouping == 'month':
+        order_dates = Order.objects.filter(
+            store__in=stores, placed_at__gte=start_date, placed_at__lte=end_date, 
+        ).annotate(month=TruncMonth('placed_at')).values('month').annotate(order_count=Count('id')).order_by('month')
+    else:
+        order_dates = Order.objects.filter(
+            store__in=stores, placed_at__gte=start_date, placed_at__lte=end_date, 
+        ).annotate(day=TruncDay('placed_at')).values('day').annotate(order_count=Count('id')).order_by('day')
+
+    # Get order status distribution (for pie chart)
+    order_status_counts = orders.values('order_status').annotate(count=Count('id'))
+
+    # Get most selling products (for pie chart)
+    product_sales = OrderItem.objects.filter(order__in=orders).values('product__name').annotate(
+        total_sales=Sum('quantity')
+    ).order_by('-total_sales')[:20]  # Show top 10 most sold products
+
+    # Optional: Revenue by Day/Month (for line chart)
+    if date_grouping == 'month':
+        daily_revenue = Order.objects.filter(
+            store__in=stores, placed_at__gte=start_date, placed_at__lte=end_date, 
+        ).annotate(month=TruncMonth('placed_at')).values('month').annotate(total_revenue=Sum('total_amount')).order_by('month')
+    else:
+        daily_revenue = Order.objects.filter(
+            store__in=stores, placed_at__gte=start_date, placed_at__lte=end_date, 
+        ).annotate(day=TruncDay('placed_at')).values('day').annotate(total_revenue=Sum('total_amount')).order_by('day')
+
+    # Pass data to template
+    return render(request, 'dashboard/custom_admin/analytics.html', {
+        'total_orders': total_orders,
+        'total_revenue': total_revenue,
+        'total_commission': total_commission,
+        'order_dates': order_dates,
+        'order_status_counts': order_status_counts,
+        'product_sales': product_sales,
+        'daily_revenue': daily_revenue,
+        'start_date': start_date,
+        'end_date': end_date,
+        'stores': stores,
+        'date_grouping': date_grouping,
+    })
+
+
+
+
+
 
 
 @login_required
@@ -2435,3 +3010,430 @@ def customer_return_requests(request):
         'return_requests': return_requests,
     }
     return render(request, 'dashboard/customer_return_requests.html', context)
+
+
+
+@login_required
+def user_dash(request):
+    return render(request, 'dashboard/custom_admin/base_dash.html')
+
+
+
+# Constants for the Wizapp API
+GROUP_CODE = "WZ01000396"
+WIZAPP_BASE_URL = "https://wizapp.in/restWizappservice"
+WIZAPP_CREDENTIALS = {
+    "userName": "Super",
+    "passwd": "123"
+}
+API_HEADERS = {
+    "GroupCode": GROUP_CODE
+}
+
+#needed some basic changes
+@user_passes_test(lambda user: user.is_authenticated and not user.groups.filter(name='Customer').exists(), login_url='accounts/login/')
+def fetch_inventory_from_wizapp(request):
+    try:
+        # Step 1: Validate User and get Refresh Token
+        step1_url = f"{WIZAPP_BASE_URL}/validateUser?GroupCode={GROUP_CODE}"
+        response = requests.post(step1_url, json=WIZAPP_CREDENTIALS)
+        response.raise_for_status()
+        refresh_token = response.json().get('refreshToken')  # Adjust according to actual API response structure
+        # print(refresh_token)
+
+        # Step 2: Get Access Token using the Refresh Token
+        step2_url = f"{WIZAPP_BASE_URL}/getAccessToken"
+        headers = {"Authorization": f"Bearer {refresh_token}"}
+        response = requests.get(step2_url, headers=headers, params={"GroupCode": GROUP_CODE})
+        response.raise_for_status()
+        access_token = response.json().get('accessToken')  # Adjust according to actual API response structure
+        # print(access_token)
+        # Step 3: Fetch Inventory Data using Access Token
+        step3_url = f"{WIZAPP_BASE_URL}/GetInvStockDataWithAPIKeyV2"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        params = {
+            "cUserId": "online",
+            "cPassword": "online",
+            "cApiKey": "test",
+            "mode": 1
+        }
+        response = requests.get(step3_url, headers=headers, params=params)
+        response.raise_for_status()
+        inventory_data = response.json()  # List of inventory items
+
+        # Process and save data to your models
+        for item in inventory_data:
+            category, _ = Category.objects.get_or_create(name=item.get("Section Name"))
+            brand, _ = Brand.objects.get_or_create(name=item.get("BRAND", "NA"))
+            store, _ = Store.objects.get_or_create(name=item.get("Loc Name"))
+
+            # Use the SKU to uniquely identify products
+            product, created = Product.objects.update_or_create(
+                
+                defaults={
+                    "name": item.get("Article No"),
+                    "inventory": int(item.get("Stock Qty", 0)),
+                    "mrp": item.get("MRP"),
+                    "sale_price": item.get("MRP"),  # Assuming sale price is the same as MRP, update if different
+                    "category": category,
+                    "brand": brand,
+                    "store": store,
+                    "description": f"{item.get('Sub Section Name')} - {item.get('STYLE')}",
+                }
+            )
+        is_admin = request.user.groups.filter(name='Admin').exists()
+        # Pass data to template or return success
+        if is_admin:
+            products = Product.objects.all()
+            categories = Category.objects.all()
+            brands = Brand.objects.all()
+        else:
+            store = Store.objects.filter(owner_name=request.user)
+            products = Product.objects.filter(store__in=store)
+            categories = Category.objects.filter(store=store)
+            brands = Brand.objects.filter(store=store)
+
+        attributes = Attribute.objects.all()
+        attribute_values = AttributeValue.objects.all()
+
+        return render(request, 'dashboard/custom_admin/products_dash.html', {
+            'products': products,
+            'categories': categories,
+            'brands': brands,
+            'attributes': attributes,
+            'attribute_values': attribute_values,
+        })
+
+    except requests.RequestException as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+BASE_URL = "https://hlbackend3.staging.shadowfax.in/"
+
+HEADERS = {
+    "Authorization": "Bearer YSYLPTJ445C0M4Y3KVYDUW2FWSWF8Q",  # Replace with your actual API token
+    "Content-Type": "application/json"
+}
+
+
+@csrf_exempt
+def sfx_flash_order_workflow(request):
+    """
+    Manages the order workflow: validate credits key, check serviceability, and create an order.
+    """
+    if request.method == "POST":
+        try:
+            # Parse the initial step from the request
+            step = request.GET.get("step")
+            data = json.loads(request.body)
+
+            if step == "validate_credits_key":
+                # Step 1: Validate credits key
+                url = f"{BASE_URL}order/credits/key/validate/"
+                response = requests.post(url, headers=HEADERS, json=data)
+                if response.status_code != 200:
+                    return JsonResponse({"error": "Failed to validate credits key", "details": response.text}, status=response.status_code)
+                return JsonResponse(response.json(), status=response.status_code)
+
+            elif step == "serviceability":
+                # Step 2: Check serviceability
+                url = f"{BASE_URL}order/serviceability/"
+                response = requests.post(url, headers=HEADERS, json=data)
+                if response.status_code != 200:
+                    return JsonResponse({"error": "Failed to check serviceability", "details": response.text}, status=response.status_code)
+                return JsonResponse(response.json(), status=response.status_code)
+
+            elif step == "create_order":
+                # Step 3: Create order
+                url = f"{BASE_URL}order/create/"
+                response = requests.post(url, headers=HEADERS, json=data)
+                if response.status_code != 200:
+                    return JsonResponse({"error": "Failed to create order", "details": response.text}, status=response.status_code)
+                return JsonResponse(response.json(), status=response.status_code)
+
+            else:
+                return JsonResponse({"error": "Invalid step parameter"}, status=400)
+        except json.JSONDecodeError as e:
+            return JsonResponse({"error": "Invalid JSON in request body", "details": str(e)}, status=400)
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": "External API request failed", "details": str(e)}, status=500)
+        except Exception as e:
+            return JsonResponse({"error": "An unexpected error occurred", "details": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid method"}, status=405)
+
+
+@csrf_exempt
+def sfx_cancel_order(request):
+    """
+    Cancels an order.
+    """
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            url = f"{BASE_URL}order/cancel/"
+            response = requests.post(url, headers=HEADERS, json=data)
+            return JsonResponse(response.json(), status=response.status_code)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid method"}, status=405)
+
+
+def sfx_track_order(request, order_id):
+    """
+    Tracks an order by its ID.
+    """
+    if request.method == "GET":
+        try:
+            url = f"{BASE_URL}order/track/{order_id}/"
+            response = requests.get(url, headers=HEADERS)
+            return JsonResponse(response.json(), status=response.status_code)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid method"}, status=405)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def place_order(request):
+    # Step 1: Check serviceability (hyperlocal)
+    serviceability_url = "https://private-anon-2453fa0f2d-sfxhlstorebased.apiary-mock.com/api/v2/store_serviceability/"
+    serviceability_payload = {
+        "store_code": "STORE_CODE",
+        "COID": "order_2345",
+        "paid": "false",
+        "stage_of_check": "pre_order",
+        "drop_latitude": 17.257465,
+        "drop_longitude": 78.085492,
+        "order_value": 250
+    }
+    serviceability_headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token 1234567890abc1234567890xyz'
+    }
+    
+    # Make a PUT request to check for rider availability
+    serviceability_response = requests.put(serviceability_url, json=serviceability_payload, headers=serviceability_headers)
+    serviceability_data = serviceability_response.json()
+
+    # if serviceability_data.get("available_rider_count", 0) == 0:
+    #     return JsonResponse({"error": "No riders available for this location."}, status=400)
+
+    # Step 2: Place the order if riders are available
+    order_url = "https://private-anon-2453fa0f2d-sfxhlstorebased.apiary-mock.com/api/v2/stores/orders/"
+    order_payload = {
+        "pickup_contact_number": "9711076015",
+        "store_code": "STORE_CODE",
+        "order_details": {
+            "scheduled_time": "2019-04-16T10:00:00Z",
+            "order_value": "380.00",
+            "paid": False,
+            "client_order_id": "150340000010725",
+            "store_manager_number": "1111111111",
+            "delivery_geofence_radius": 500,
+            "delivery_instruction": {
+                "drop_instruction_text": "Don’t call me. Please come to the first floor and ring the doorbell.",
+                "take_drop_off_picture": True,
+                "drop_off_picture_mandatory": True
+            }
+        },
+        "customer_details": {
+            "address_line_1": "106 charms solitaire, ahinsa khand-2",
+            "city": "Ghaziabad",
+            "contact_number": "9986321214",
+            "address_line_2": "Makanpur",
+            "name": "Aakriti",
+            "latitude": 12.387487873,
+            "longitude": 77.78787878
+        },
+        "misc": {
+            "type": "slotted",
+            "pickup_otp": "1234",
+            "return_otp": "9876",
+            "delivery_otp": "7412",
+            "promised_delivery_time": "2019-04-16T12:00:00Z",
+            "weight": 15
+        },
+        "product_details": [
+            {
+                "id": 12095247,
+                "weight": 0.5,
+                "quantity": 1,
+                "name": "Rajma Jammu",
+                "price": 130
+            },
+            {
+                "id": 12095248,
+                "weight": 0.5,
+                "quantity": 2,
+                "name": "Mangat Ram Pulses Chana Dal",
+                "price": 68.5
+            }
+        ]
+    }
+    order_headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token 1234567890abc1234567890xyz'
+    }
+
+    # Make a POST request to place the order
+    order_response = requests.post(order_url, json=order_payload, headers=order_headers)
+
+    # Return the response of order placement
+    return JsonResponse(order_response.json())
+
+
+
+
+@csrf_exempt
+def get_order_status(request, sfx_order_id):
+    # Define the API URL and headers
+    url = f"https://private-anon-2453fa0f2d-sfxhlstorebased.apiary-mock.com/api/v2/orders/{sfx_order_id}/status/"
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token 1234567890abc1234567890xyz'
+    }
+
+    # Make the GET request to Shadowfax API
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Raise error for invalid status codes
+        order_status = response.json()
+        return JsonResponse(order_status, safe=False)
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+
+@csrf_exempt
+def cancel_order(request, sfx_order_id):
+    url = f"https://private-anon-2453fa0f2d-sfxhlstorebased.apiary-mock.com/api/v2/orders/{sfx_order_id}/cancel/"
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token 1234567890abc1234567890xyz'
+    }
+
+    data = {
+        "reason": "Seller missing items",  # Update the reason as required
+        "user": "Seller"  
+    }
+
+    try:
+        response = requests.put(url, headers=headers, data=json.dumps(data))
+        response.raise_for_status()  # Raise error for invalid status codes
+        cancellation_response = response.json()
+        return JsonResponse(cancellation_response, safe=False)
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    
+
+def ola_autocomplete(request):
+    query = request.GET.get('query', '')  # Get search query from frontend
+
+    if not query:
+        return JsonResponse({"error": "No query provided"}, status=400)
+
+    url = f"https://api.olamaps.io/places/v1/autocomplete?input={query}&api_key={settings.OLA_API_KEY}"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for HTTP errors
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Extract the relevant information
+            locations = []
+            for prediction in data.get('predictions', []):
+                location_info = {
+                    'description': prediction.get('description', ''),
+                    'geometry': prediction.get('geometry', {}).get('location', {})
+                }
+                locations.append(location_info)
+            
+            # Return the extracted data as JSON
+            return JsonResponse({'locations': locations}, safe=False)
+    except requests.RequestException as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+def ola_geocode(address):
+    language = 'en'  # Default to English if no language is specified
+
+    if not address:
+        return JsonResponse({"error": "No address provided"}, status=400)
+
+    # Construct the API URL
+    url = (
+        f"https://api.olamaps.io/places/v1/geocode"
+        f"?address={address}&language={language}&api_key={settings.OLA_API_KEY}"
+    )
+
+    try:
+        # Make the API request
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for HTTP errors
+        data = response.json()
+
+        # Extract latitude and longitude from the geocoding results
+        if 'geocodingResults' in data and data['geocodingResults']:
+            first_result = data['geocodingResults'][0]
+            latitude = first_result['geometry']['location']['lat']
+            longitude = first_result['geometry']['location']['lng']
+            return latitude, longitude
+        else:
+            raise ValueError("No geocoding results found")
+    except requests.RequestException as e:
+        raise Exception(f"Error with API request: {str(e)}")
+
+
+def ola_reverse_geocode(request):
+    # Get latitude and longitude from the request's query parameters
+    lat = request.GET.get('lat', None)
+    lng = request.GET.get('lng', None)
+
+    if not lat or not lng:
+        return JsonResponse({"error": "Latitude and Longitude are required"}, status=400)
+
+    # Construct the API URL
+    url = (
+        f"https://api.olamaps.io/places/v1/reverse-geocode"
+        f"?latlng={lat},{lng}&api_key={settings.OLA_API_KEY}"
+    )
+
+    try:
+        # Make the API request
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for HTTP errors
+         # Parse the response JSON
+        data = response.json()
+
+        # Check if the 'results' key exists and is not empty
+        if "results" in data and data["results"]:
+            # Extract the first formatted_address from results
+            formatted_address = data["results"][0].get("formatted_address", "")
+            return JsonResponse({"display_name": formatted_address})
+
+        # If no results are found
+        return JsonResponse({"error": "No address found for the given coordinates"}, status=404)
+    except requests.RequestException as e:
+        return JsonResponse({"error": str(e)}, status=500)

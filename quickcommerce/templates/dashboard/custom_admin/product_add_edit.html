@@ -1,0 +1,177 @@
+{% extends 'dashboard/custom_admin/base_dash.html' %}
+{% block title %}{% if product %}Edit Product{% else %}Add Product{% endif %}{% endblock %}
+
+{% block content %}
+
+
+<style>
+    .message-container .alert {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.message-container .alert.fade-out {
+    opacity: 0;
+}
+</style>
+
+<div class="container pt-5">
+    <h1 class="mb-4">{% if product %}Edit Product{% else %}Add Product{% endif %}</h1>
+    
+    {% if messages %}
+    <div class="message-container">
+        {% for message in messages %}
+            <div class="alert alert-success" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Primary Image Section -->
+        <div class="mb-3">
+            <label for="primary_image" class="form-label">Primary Image</label>
+            <input type="file" name="primary_image" class="form-control" accept="image/*" onchange="previewPrimaryImage(event)">
+            {% if product and product.image %}
+                <img id="primaryImagePreview" src="{{ product.image.url }}" alt="Primary Image" class="img-thumbnail mt-2" style="max-width: 150px;">
+            {% endif %}
+        </div>
+
+        <!-- Gallery Images Section -->
+        <div class="mb-3">
+            <label for="gallery_images" class="form-label">Gallery Images</label>
+            <input type="file" id="gallery" name="gallery_images" class="form-control" accept="image/*" multiple onchange="previewGalleryImages(event)">
+            {% if product %}
+                <div id="galleryPreview" class="d-flex mt-2 flex-wrap gap-2">
+                    {% for image in product.gallery.all %}
+                        <img src="{{ image.url }}" alt="Gallery Image" class="img-thumbnail" style="max-width: 100px;">
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Attributes Section -->
+        <div class="mb-3">
+            <label for="attributes" class="form-label">Select Attributes</label>
+            <select name="attributes" id="attributes" class="form-select" multiple>
+                {% for value in attribute_values %}
+                    <option value="{{ value.id }}" {% if product and value in product.attributes.all %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- General Details -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="name" class="form-label">Name</label>
+                <input type="text" name="name" class="form-control" value="{% if product %}{{ product.name }}{% endif %}" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="sku" class="form-label">SKU</label>
+                <input type="text" name="sku" class="form-control" value="{% if product %}{{ product.sku }}{% endif %}" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="mrp" class="form-label">MRP</label>
+                <input type="number" name="mrp" class="form-control" value="{% if product %}{{ product.mrp }}{% endif %}" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="sale_price" class="form-label">Sale Price</label>
+                <input type="number" name="sale_price" class="form-control" value="{% if product %}{{ product.sale_price }}{% endif %}" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="store" class="form-label">Store</label>
+                <select name="store" class="form-select" required>
+                    {% if product and product.store %}
+                        <option value="{{ product.store.id }}" selected>{{ product.store.name }}</option>
+                    {% endif %}
+                    {% for store in stores %}
+                        <option value="{{ store.id }}">{{ store.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="inventory" class="form-label">Inventory</label>
+                <input type="number" name="inventory" class="form-control" value="{% if product %}{{ product.inventory }}{% endif %}" required>
+            </div>
+
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea name="description" class="form-control">{% if product %}{{ product.description }}{% endif %}</textarea>
+        </div>
+
+        <!-- Category and Brand -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="category" class="form-label">Category</label>
+                <select name="category" class="form-select" required>
+                    {% if product %}
+                        <option value="{{ product.category.id }}" selected>{{ product.category.name }}</option>
+                    {% endif %}
+                    {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="brand" class="form-label">Brand</label>
+                <select name="brand" class="form-select" required>
+                    {% if product %}
+                        <option value="{{ product.brand.id }}" selected>{{ product.brand.name }}</option>
+                    {% endif %}
+                    {% for brand in brands %}
+                        <option value="{{ brand.id }}">{{ brand.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">{% if product %}Save Changes{% else %}Add Product{% endif %}</button>
+    </form>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    function previewPrimaryImage(event) {
+        const preview = document.getElementById('primaryImagePreview');
+        preview.src = URL.createObjectURL(event.target.files[0]);
+        preview.style.display = 'block';
+    }
+
+    function previewGalleryImages(event) {
+        const galleryPreview = document.getElementById('galleryPreview');
+        galleryPreview.innerHTML = '';
+        for (const file of event.target.files) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.classList.add('img-thumbnail');
+            img.style.maxWidth = '100px';
+            img.style.marginRight = '10px';
+            galleryPreview.appendChild(img);
+        }
+    }
+
+    // Auto-close messages after 5 seconds using jQuery
+    $(document).ready(function() {
+            setTimeout(function() {
+                $(".alert").fadeOut("slow"); // Fade out the alert message
+            }, 4000); // 5000ms = 5 seconds
+        });
+</script>
+{% endblock %}

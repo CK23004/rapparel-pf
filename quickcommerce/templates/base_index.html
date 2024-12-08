@@ -18,14 +18,20 @@
             margin-top: 11rem !important;
         }
     }
-.location-input-container{
-  max-width:60% !important;
-}
+
 @media (max-width:768px) {
+
+  .navbar .d-flex{
+        margin-top: 0rem !important;
+  }
+
   #checktabmsg{
             margin-top: 14rem !important;
         }
 }
+
+
+
  </style>
   <!-- Additional CSS goes here -->
   {% endblock %}
@@ -35,7 +41,6 @@
 
 
     
-  <!-- Mobile Header -->
   <header id="mobile-header" class="d-none mobile-nav">
     <nav class="navbar navbar-light bg-white justify-content-between  px-3 py-2">
       <div class="d-flex align-items-center">
@@ -43,7 +48,6 @@
           <img src="{%  static 'img/logo.svg'  %}" alt="Rapparel Logo" width="70" height="70">
         </a>
         <div class="location-input-container">
-          <!-- Normal input field for location -->
           <div class="input-group">
             <div class="input-group-prepend">
               <span class="input-group-text text-sm" id="location-icon-mobile">
@@ -57,28 +61,33 @@
               <span class="input-group-text text-sm" id="search-icon-mobile">
                 <i class="fas fa-search"></i>
               </span>
+              {% if user.is_authenticated %}
               <span class="input-group-text text-sm d-none" id="select-icon-mobile">
                 <i class="fas fa-list"></i>
               </span>
+            {% endif %}
             </div>
             
           </div>        
          
           
-          <div id="location-suggestions-mobile"  style="position: absolute;" class="list-group d-none"></div>
+          <div id="location-suggestions-mobile"  style="position: absolute; z-index: 1000;" class="list-group d-none"></div>
   
       </div>
       </div>
 
-      <form id="search-form" class="form-inline position-relative" style="flex-grow: 1;">
-        <input id="search-bar-mobile" class="form-control" type="text" placeholder="Search products" aria-label="Search">
-        <i class="bi bi-search search-icon-desktop"></i>
-    </form>
-    
-    <!-- Search results container -->
-    <div id="search-results" style="display: none; position: absolute; background-color: white; width: 100%; z-index: 1000;">
-        <!-- Search results will be dynamically inserted here -->
+      <div class="d-flex align-items-center mt-0" style="width: 100%;">
+      <div class="input-group">
+        <form id="search-form" class="form-inline position-relative" style="flex-grow: 1;">
+          <input id="search-bar-mobile" class="form-control" type="text" placeholder="Search products" aria-label="Search">
+         
+        </form>
+      <div id="search-results-mobile" class="list-group d-none" style="margin-top: 2.4rem; position: absolute; z-index: 1000; width: 100%;">
+      </div>
     </div>
+        </div>
+
+
     </nav>
   </header>
 
@@ -90,7 +99,7 @@
       </a>
       
     
-       <div class="location-input-container">
+       <div class="location-input-container" style="max-width: 100%;">
         <!-- Normal input field for location -->
         <div class="input-group">
           <div class="input-group-prepend">
@@ -99,37 +108,40 @@
             </span>
           </div>
           <input type="text" id="location-input-desktop" placeholder="Location detected" class="form-control" disabled>
-          <select id="location-select-desktop" class="form-control d-none">
+          <select id="location-select-desktop" class="form-control d-none" style="max-width: 50%;">
           </select>
           <div class="input-group-append">
             <span class="input-group-text text-sm" id="search-icon-desktop">
               <i class="fas fa-search"></i>
             </span>
+            {% if user.is_authenticated %}
             <span class="input-group-text text-sm d-none" id="select-icon-desktop">
               <i class="fas fa-list"></i>
             </span>
+            {% endif %}
           </div>
           
         </div>        
-       
-        
-        <div id="location-suggestions-desktop"  style="position: absolute; " class="list-group d-none"></div>
-
+        <div id="location-suggestions-desktop"  style="position: absolute; z-index: 1000;" class="list-group d-none"></div>
     </div>
-
-      
     </div>
 
     <div class="d-flex align-items-center">
-      <form id="search-form" class="form-inline d-none position-relative mr-2" style="flex-grow: 1;">
+      <div class="input-group">
+      <form id="search-form" class="form-inline position-relative mr-2" style="flex-grow: 1;">
         <input id="search-bar" class="form-control" type="text" placeholder="Search products" aria-label="Search">
-        <i class="bi bi-search search-icon-desktop"></i>
-    </form>
-    
+        <div class="input-group-append">
+          <!-- <span class="input-group-text text-sm d-none" id="psearch-icon-desktop">
+            <i class="fas fa-search search-icon-desktop"></i>
+          </span> -->
+        
+      </div>
+      </form>
     <!-- Search results container -->
-    <div id="search-results" class="d-none" style=" position: absolute; background-color: white; width: 100%; z-index: 1000;">
+    <div id="search-results" class="list-group d-none" style="margin-top: 2.4rem; position: absolute; z-index: 1000;">
         <!-- Search results will be dynamically inserted here -->
     </div>
+  </div>
       
       <a href="{% url 'customer_wishlist' %}" class="mr-3"><i class="bi bi-heart"></i></a>
       <a href="{% url 'cart_checkout' %}" class="mr-3"><i class="bi bi-bag"></i></a>
@@ -212,7 +224,7 @@
         <i class="bi bi-person-circle" style="font-size: 1.5rem;"></i>
         <p>Account</p>
       </a>
-      <a href="/wishlist/" class="nav-item text-center">
+      <a href="/customer/wishlist/" class="nav-item text-center">
         <i class="bi bi-heart" style="font-size: 1.5rem;"></i>
         <p>Wishlist</p>
       </a>
@@ -227,184 +239,16 @@
 
   <script>
  $(document).ready(function () {
-/***
-  var typingTimer;
-    var doneTypingInterval = 300; // Time in ms (0.3 seconds)
-    var $input = $('#location-input-desktop');
-    var $suggestions = $('#location-suggestions-desktop');
 
-    // On keyup, start the countdown for the user typing
-    $input.on('keyup', function () {
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(doneTyping, doneTypingInterval);
-    });
-
-    // On keydown, clear the countdown
-    $input.on('keydown', function () {
-        clearTimeout(typingTimer);
-    });
-
-    // User is done typing, fetch suggestions
-    function doneTyping() {
-        var query = $input.val();
-
-        // If the input is empty, clear the suggestions
-        if (query.length === 0) {
-            $suggestions.empty().addClass('d-none');
-            return;
-        }
-
-        // Make an AJAX request to the Nominatim API for autocomplete suggestions
-        var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + query;
-
-        $.getJSON(apiUrl, function (data) {
-            // Clear previous suggestions
-            $suggestions.empty();
-
-            // If no results, show "No results found"
-            if (data.length === 0) {
-                $suggestions.append('<div class="list-group-item list-group-item-action">No results found</div>');
-            } else {
-                // Loop through results and append to suggestions div
-                data.forEach(function (item) {
-                    var displayAddress = item.display_name;
-                    var lat = item.lat;
-                    var lon = item.lon;
-
-                    // Append each result as an option
-                    $suggestions.append(
-                        '<a href="#" class="list-group-item list-group-item-action" data-lat="' + lat + '" data-lon="' + lon + '">' + displayAddress + '</a>'
-                    );
-                });
-            }
-
-            // Show the suggestions box
-            $suggestions.removeClass('d-none');
-        });
-    }
-
-    // Handle clicking on a suggestion
-    $suggestions.on('click', 'a', function (e) {
-        e.preventDefault();
-
-        // Get the selected address and coordinates
-        var selectedAddress = $(this).text();
-        var latitude = $(this).data('lat');
-        var longitude = $(this).data('lon');
-
-        // Update the input field with the selected address
-        $input.val(selectedAddress);
-        $suggestions.empty().addClass('d-none'); // Hide suggestions
-
-        // Optionally, send the latitude and longitude to the server or update the URL
-        updateUrlWithLocation(latitude, longitude);
-    });
-
-    // Function to update URL with latitude and longitude
-    function updateUrlWithLocation(latitude, longitude) {
-        var currentUrl = window.location.href.split('?')[0]; // Get current URL without query params
-        var newUrl = currentUrl + '?latitude=' + latitude + '&longitude=' + longitude;
-        history.replaceState({}, '', newUrl); // Update the URL without reloading the page
-    }
-
-
-
-
-
-
-
-
-
-
-    var savedAddresses = []; // This will be fetched using AJAX, as shown below
-
-    // Fetch saved addresses using AJAX when the page loads
-    // Fetch saved addresses using AJAX when the page loads
-$.ajax({
-    url: "{% url 'fetch_saved_addresses' %}",  // URL of the view you created
-    method: "GET",
-    success: function(data) {
-        savedAddresses = data;
-        if (savedAddresses.length > 0) {
-            // Enable manual search for both desktop and non-desktop
-            $('#location-input, #location-input-desktop').attr('placeholder', 'Search for location');
-            $('#location-input, #location-input-desktop').prop('disabled', false);  // Make input field editable
-            $('#location-select, #location-select-desktop').removeClass('d-none');  // Show the select box
-
-            // Populate the select box with the saved addresses for both desktop and non-desktop
-            savedAddresses.forEach(function (address) {
-                var displayAddress = address.street_address + ', ' + address.city + ', ' + address.state + ', ' + address.country;
-                $('#location-select, #location-select-desktop').append(new Option(displayAddress, address.id));
-                updateBrandLinksWithAddress(address.id);
-                updateCategoryLinksWithAddress(address.id);
-            });
-
-            // Add an option for manually searching or using current location
-            $('#location-select, #location-select-desktop').append(new Option("Use my current location", "current_location"));
-            $('#location-input, #location-input-desktop').prop('disabled', true); // Disable input by default if saved addresses exist
-        } else {
-            // Automatically detect the real-time location if no saved addresses
-            detectRealTimeLocation();
-        }
-    },
-    error: function(error) {
-        console.log("Error fetching saved addresses:", error);
-    }
-});
-
-// Detect real-time location on page load
-function detectRealTimeLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-            var latitude = position.coords.latitude;
-            var longitude = position.coords.longitude;
-
-            // Use reverse geocoding to convert coordinates into an address
-            var geocodingUrl = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + latitude + '&lon=' + longitude;
-
-            $.getJSON(geocodingUrl, function (data) {
-                var detectedAddress = data.display_name;
-
-                // Display detected address in the input fields for both desktop and non-desktop
-                $('#location-input, #location-input-desktop').val(detectedAddress);
-                $('#location-input, #location-input-desktop').prop('disabled', true); // Disable the input field for detected address
-                $('#location-input, #location-input-desktop').attr('placeholder', 'Location detected');
-                // Optionally, pass latitude and longitude as hidden fields or form data
-                updateBrandLinksWithLocation(latitude, longitude);
-                updateCategoryLinksWithLocation(latitude, longitude);
-                updateUrlWithLocation(latitude, longitude);
-              });
-        }, function (error) {
-            alert('Error detecting location: ' + error.message);
-        });
-    } else {
-        alert('Geolocation is not supported by this browser.');
-    }
-}
-
-// Allow switching between manual entry and saved address/current location
-$('#location-select, #location-select-desktop').on('change', function() {
-    if ($(this).val() === "current_location") {
-        detectRealTimeLocation(); // Re-trigger location detection
-        $('#location-input, #location-input-desktop').prop('disabled', true);  // Disable manual entry
-    } else {
-        $('#location-input, #location-input-desktop').prop('disabled', false); // Enable manual entry if not using current location
-        $('#location-input, #location-input-desktop').val('');  // Clear the input for manual typing
-    }
-});
-
-
-
-    
-
-***/
 
     var typingTimer;
     var doneTypingInterval = 300; // Time in ms (0.3 seconds)
-    var $input = $('#location-input-desktop');
-    var $suggestions = $('#location-suggestions-desktop');
-    var $dropdown = $('#location-select-desktop');
+    var $input = $('#location-input-desktop, #location-input-mobile');
+    var $suggestions = $('#location-suggestions-desktop, #location-suggestions-mobile');
+    var $dropdown = $('#location-select-desktop, #location-select-mobile');
     var currentAddress = '';
+
+    
 
     // Initially fetch real-time location when page loads
     detectRealTimeLocation();
@@ -431,27 +275,27 @@ $('#location-select, #location-select-desktop').on('change', function() {
         }
 
         // Make an AJAX request to the Nominatim API for autocomplete suggestions
-        var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + query;
+        var apiUrl = '/autocomplete/?query=' + query;
 
         $.getJSON(apiUrl, function (data) {
             // Clear previous suggestions
             $suggestions.empty();
 
             // If no results, show "No results found"
-            if (data.length === 0) {
-                $suggestions.append('<div class="list-group-item list-group-item-action">No results found</div>');
-            } else {
+            if (data.locations.length === 0) {
+              $suggestions.append('<div class="list-group-item list-group-item-action">No results found</div>');
+          } else {
                 // Loop through results and append to suggestions div
-                data.forEach(function (item) {
-                    var displayAddress = item.display_name;
-                    var lat = item.lat;
-                    var lon = item.lon;
+                data.locations.forEach(function (item) {
+                  var displayAddress = item.description; // Get the address from 'description'
+                  var lat = item.geometry.lat; // Get the latitude from 'geometry'
+                  var lon = item.geometry.lng; // Get the longitude from 'geometry'
 
-                    // Append each result as an option
-                    $suggestions.append(
-                        '<a href="#" class="list-group-item list-group-item-action" data-lat="' + lat + '" data-lon="' + lon + '">' + displayAddress + '</a>'
-                    );
-                });
+                  // Append each result as an option
+                  $suggestions.append(
+                      '<a href="#" class="list-group-item list-group-item-action" data-lat="' + lat + '" data-lon="' + lon + '">' + displayAddress + '</a>'
+                  );
+              });
             }
 
             // Show the suggestions box
@@ -507,7 +351,7 @@ $('#location-select, #location-select-desktop').on('change', function() {
                 var longitude = position.coords.longitude;
 
                 // Use reverse geocoding to convert coordinates into an address
-                var geocodingUrl = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + latitude + '&lon=' + longitude;
+                var geocodingUrl = '/reverse-geocode/?lat=' + latitude + '&lng=' + longitude;
 
                 $.getJSON(geocodingUrl, function (data) {
                     var currentAddress = data.display_name;
@@ -631,6 +475,18 @@ function updateCurrentLocationOption(currentAddress) {
     });
 
 
+ // Handle search icon click
+ $('#search-icon-mobile').on('click', function() {
+        if ($input.prop('disabled')) {
+            $input.val('').prop('disabled', false).attr('placeholder', 'Search for address').focus();
+            $input.removeClass('d-none');
+            $dropdown.addClass('d-none'); // Hide dropdown
+            $('#search-icon-mobile').addClass('d-none');
+            $('#select-icon-mobile').removeClass('d-none');
+            $suggestions.empty().addClass('d-none');
+        }
+    });
+
      // Handle select icon click
      $('#select-icon-desktop').on('click', function() {
         if (!$input.prop('disabled')) {
@@ -644,6 +500,18 @@ function updateCurrentLocationOption(currentAddress) {
             $suggestions.empty().addClass('d-none');
     });
 
+    // Handle select icon click
+    $('#select-icon-mobile').on('click', function() {
+        if (!$input.prop('disabled')) {
+            $input.val('').prop('disabled', true).attr('placeholder', 'Search for address').focus();
+            $input.addClass('d-none');
+            
+        }
+        $dropdown.removeClass('d-none'); // Hide dropdown
+            $('#search-icon-mobile').removeClass('d-none');
+            $('#select-icon-mobile').addClass('d-none');
+            $suggestions.empty().addClass('d-none');
+    });
 
 
     // Function to update URL with latitude and longitude
@@ -735,13 +603,13 @@ $('#viewMoreBtn').on('click', function () {
 <script>
   $(document).ready(function() {
     let typingTimer;
-    const typingDelay = 3000; // 3s delay after typing stops
+    const typingDelay = 300; // 3s delay after typing stops
     const searchInputs = $('#search-bar, #search-bar-mobile');  // Select both inputs
-    const searchResults = $('#search-results');  // Assuming you have a div to display the search results
+    const searchResults = $('#search-results, #search-results-mobile');
 
     // Function to perform the search request
     function performSearch(query) {
-      console.log('Performing search for:', query);  // Add log to check if search is triggered
+      // console.log('Performing search for:', query);  // Add log to check if search is triggered
 
         $.ajax({
             url: '/search/',  // The URL of your search view
@@ -752,21 +620,24 @@ $('#viewMoreBtn').on('click', function () {
             success: function(response) {
               console.log('Response:', response); 
                 if (response.products && response.products.length > 0) {
-                    searchResults.empty();  // Clear any existing results
+                    searchResults.empty(); 
                     response.products.forEach(product => {
-                        const productHTML = `
-                            <div class="search-result-item">
-                                <img src="${product.image}" alt="${product.name}" class="search-result-img">
-                                <div class="search-result-info">
-                                    <a href="/product/${product.slug}/">${product.name}</a>
-                                    <p>Rs. ${product.price}</p>
-                                </div>
-                            </div>`;
+                      const productHTML = `
+                        <div class="list-group-item list-group-item-action d-flex mt-0 align-items-center">
+                            <div class="mr-3">
+                                <img src="${product.image}" alt="${product.name}" class="img-fluid rounded" style="width: 50px; height: 50px;">
+                            </div>
+                            <div class="flex-grow-1">
+                                <a href="/product/${product.slug}/" class="text-dark fw-bold d-block">${product.name}</a>
+                                <small class="text-muted">Brand: ${product.brand}</small><br>
+                                <small class="text-muted">Rs. ${parseFloat(product.price).toFixed(2)}</small>
+                            </div>
+                        </div>`;
                         searchResults.append(productHTML);  // Append the result to the results div
                     });
-                    searchResults.show();  // Show results
+                    searchResults.removeClass('d-none');  // Show results
                 } else {
-                    searchResults.html('<p>No products found</p>').show();
+                    searchResults.html('<div class="list-group-item list-group-item-action">No results found</div>').removeClass('d-none');
                 }
             },
             error: function(error) {
@@ -775,14 +646,14 @@ $('#viewMoreBtn').on('click', function () {
         });
     }
 
-    // Handle input event on the search bar
-    searchInput.on('input', function() {
+    // // Handle input event on the search bar
+    searchInputs.on('input', function() {
         const query = $(this).val();
         clearTimeout(typingTimer);
         if (query.length >= 2) {
             typingTimer = setTimeout(() => performSearch(query), typingDelay);
         } else {
-            searchResults.empty().hide();  // Hide the results if less than 2 characters
+          searchResults.empty().addClass('d-none'); // Hide the results if less than 2 characters
         }
     });
 });

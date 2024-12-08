@@ -1,0 +1,33 @@
+{% extends 'dashboard/custom_admin/base_dash.html' %}
+
+{% block content %}
+<div class="container pt-5">
+    <!-- <meta name="csrf-token" content="{{ csrf_token }}"> -->
+    <h2 class="mb-4 text-center">Return Requests</h2>
+    <!-- <h2>Return Requests</h2> -->
+    <table class="table table-bordered table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Order No</th>
+                <th>Product</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Updated At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for return_request in return_requests %}
+                <tr>
+                    <td>{{ return_request.order_item.order.order_no }}</td>
+                    <td>{{ return_request.order_item.product.name }}</td>
+                    <td>{{ return_request.reason }}</td>
+                    <td>{{ return_request.status }}</td>
+                    <td>{{ return_request.created_at }}</td>
+                    <td>{{ return_request.updated_at }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+    {% endblock %}

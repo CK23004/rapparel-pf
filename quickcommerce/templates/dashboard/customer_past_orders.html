@@ -11,7 +11,7 @@
         <div class="accordion-item">
             <h2 class="accordion-header" id="heading{{ order.id }}">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ order.id }}" aria-expanded="true" aria-controls="collapse{{ order.id }}">
-                    Order ID: {{ order.id }} - Total: ₹{{ order.total_amount }} - Placed At: {{ order.placed_at|date:"Y-m-d H:i" }}
+                    Order Number: #{{ order.order_no }} - Total: ₹{{ order.total_amount }} - Placed At: {{ order.placed_at|date:"Y-m-d H:i" }}
                 </button>
             </h2>
             <div id="collapse{{ order.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ order.id }}" data-bs-parent="#ordersAccordion">

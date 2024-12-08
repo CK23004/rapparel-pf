@@ -258,8 +258,8 @@ class StoreAdmin(admin.ModelAdmin):
         js = ('admin/js/hide_api_fields.js',)
 
     list_display = ('name', 'owner_name', 'owner_contact', 'commission_rate', 'is_featured', 'display_brands', 'display_categories')  # Display these fields in the list view
-    search_fields = ('name', 'owner_name', 'owner_contact', 'contact_person_name')  # Allow search by store name and owner name
-    list_filter = ('is_featured', 'categories', 'brands')
+    search_fields = ('name', 'owner_name__email', 'owner_name__phone_number', 'owner_name__username', 'contact_person_name')  
+    list_filter = ('is_featured', 'brands__name', 'categories__name')
 
     # Group fields into sections for better organization
     fieldsets = (
@@ -647,8 +647,8 @@ class PaymentInline(admin.TabularInline):
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'store', 'total_amount', 'order_status', 'payment_status', 'placed_at', 'updated_at')
-    search_fields = ('user__email', 'id')
+    list_display = ('order_no', 'user', 'store', 'total_amount', 'order_status', 'payment_status', 'placed_at', 'updated_at')
+    search_fields = ('user__email', 'order_no', 'total_amount' )
     list_filter = ('order_status', 'payment_status', 'placed_at')
     readonly_fields = ('placed_at', 'updated_at', 'tracking_id', 'delivery_status')
 

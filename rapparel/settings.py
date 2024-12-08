@@ -32,7 +32,9 @@ ADMIN_EMAIL = 'info@rapparelsolutions.com'
 SUPPORT_EMAIL = 'info@rapparelsolutions.com'  # Used in the email template
 
 
-
+OLA_API_KEY = "yNTc4lKqwbkmrjwCrd2m3sBAZZ2U6hSFjJRet18G"
+OLA_CLIENT_ID = "fc6892a2-a7be-4202-ad3d-96d98d9e5c1b"
+OLA_CLIENT_SECRET = "g9wpTJdvjNAUnVUx4Wr3SYcwFShPpmqp"
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

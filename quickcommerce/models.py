@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser
 import uuid
 from django.db import IntegrityError
 from django.utils.text import slugify
-import datetime
+import datetime, random
 # User Model
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -93,6 +93,7 @@ class Store(models.Model):
         ('unicommerce', 'UniCommerce'),
         ('sap_hana', 'SAP HANA'),
         ('logicerp', 'LogicERP'),
+        ('wizapp', 'Wizapp'),
     ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)  # Ensure store name is unique
@@ -196,6 +197,7 @@ class AttributeValue(models.Model):
 class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255,unique=True)
+    sku = models.CharField(max_length=255, unique=True, null=True, blank=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     inventory = models.IntegerField(default=0, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -333,6 +335,7 @@ class Order(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order_no = models.CharField(max_length=5, unique=True, editable=False, null=True)  # CharField for random 5-digit order number
     user = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
     # address = models.ForeignKey(Address, related_name='orders', on_delete=models.CASCADE)
 
@@ -356,6 +359,20 @@ class Order(models.Model):
 
     def __str__(self):
         return f'Order {self.id} - {self.user.email}'
+    
+    def save(self, *args, **kwargs):
+        if not self.order_no:  # Assign only if `order_no` is not set
+            self.order_no = self.generate_unique_order_no()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_unique_order_no():
+        while True:
+            random_number = str(random.randint(10000, 99999))  # Generate a random 5-digit number        
+            if not Order.objects.filter(order_no=random_number).exists():
+                return random_number
+            else:
+                continue
     
     class Meta:
         verbose_name = "Manage Order"

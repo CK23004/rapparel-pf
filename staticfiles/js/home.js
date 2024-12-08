@@ -79,24 +79,24 @@ $(document).ready(function () {
       hideArrowsIfNecessary(brandCarousel, prevBrandButton, nextBrandButton);
     });
   
-    // Search Input Fetching Logic
-    $('#search-bar').on('input', function () {
-      const query = $(this).val();
+    // // Search Input Fetching Logic
+    // $('#search-bar').on('input', function () {
+    //   const query = $(this).val();
   
-      if (query.length >= 2) {  // Only send request if more than 2 characters
-        $.ajax({
-          url: `/search?q=${query}`,
-          method: 'GET',
-          dataType: 'json',
-          success: function (data) {
-            console.log(data);  // Handle the search results (e.g., show suggestions in a dropdown)
-          },
-          error: function (error) {
-            console.error('Error:', error);
-          }
-        });
-      }
-    });
+    //   if (query.length >= 2) {  // Only send request if more than 2 characters
+    //     $.ajax({
+    //       url: `/search?q=${query}`,
+    //       method: 'GET',
+    //       dataType: 'json',
+    //       success: function (data) {
+    //         console.log(data);  // Handle the search results (e.g., show suggestions in a dropdown)
+    //       },
+    //       error: function (error) {
+    //         console.error('Error:', error);
+    //       }
+    //     });
+    //   }
+    // });
   
     
   });

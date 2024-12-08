@@ -12,7 +12,7 @@ Home - Rapparel
       <img src="{{ primary_banner.image.url }}" alt="Banner" class="img-fluid">
       
 
-      <div class="carousel-caption">
+      <!-- <div class="carousel-caption">
         {% if primary_banner.title %}
         <h1>{{ primary_banner.title }}</h1>
         {% endif %}
@@ -23,7 +23,7 @@ Home - Rapparel
         {% if primary_banner.button_text %}
         <a href="{{ primary_banner.button_link }}" class="btn btn-danger">{{ primary_banner.button_text }}</a>
         {% endif %}{% endif %}
-      </div>
+      </div> -->
 
     {% else %}
       <img src="https://via.placeholder.com/1200x500" alt="Banner" class="img-fluid">
@@ -77,13 +77,18 @@ Home - Rapparel
   <!-- Yellow Carousel Section -->
   <div id="yellowCarousel" class="carousel slide content-container" data-ride="carousel" data-interval="3000">
     <div class="carousel-inner">
+      {% if secondary_banners %}
       {% for banner in secondary_banners %}
         <div class="carousel-item {% if forloop.first %}active{% endif %}">
           <a href="{{ banner.link }}">
             <img src="{{ banner.image.url }}" class="d-block w-100" alt="{{ banner.title }}">
         </a>
         </div>
+        
       {% endfor %}
+      {% else %}
+      <img src="https://via.placeholder.com/258x200" alt="Banner" class="img-fluid">
+    {% endif %}
     </div>
     <a class="carousel-control-prev banner-arrow" href="#yellowCarousel" role="button" data-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>

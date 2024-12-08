@@ -107,21 +107,49 @@ urlpatterns = [
 
 #dashboard urls
     path('dashboard/home/',base_dash, name='base_dash'),
+    path('dashboard/orders/', orders_page, name='orders_page'),
+    path('dashboard/orders/fetch', ajax_orders, name='ajax_orders'),
+    path('dashboard/orders/<uuid:order_id>/details/', order_details, name='order_details'),
+    path('dashboard/orders/<uuid:order_id>/update_status/', update_order_status, name='update_order_status'),
+    path('dashboard/new-pending-orders/', get_new_pending_orders, name='get_new_pending_orders'),
+    path('dashboard/return-requests/', admin_return_requests, name='admin_return_requests'),
+    path('dashboard/user/profile/',admin_profile, name='admin_profile'),
+    path('dashboard/analytics/',analytics_view, name='analytics_view'),
+    # path('dashboard/store/<uuid:store_id>/update/',update_store_image, name='update_store_image'),
+
+
+
+
     path('customer/profile/',customer_profile, name='customer_profile'),
     path('customer/orders/',customer_past_orders, name='customer_past_orders'),
     path('customer/wishlist/',customer_wishlist, name='customer_wishlist'),
     path('returns/request/<uuid:order_item_id>/', create_return_request, name='create_return_request'),
-    path('customer/returns/', customer_return_requests, name='customer_return_requests'),
+    path('customer/returns/',customer_return_requests, name='customer_return_requests'),
 
 
 
+    # path('dashboard/products/',products_dash, name='products_dash'),
+    path('dashboard/products/', list_products, name='products_dash'),
+    path('dashboard/products/add/', add_or_edit_product, name='add_product'),
+    path('dashboard/products/edit/<uuid:product_id>/', add_or_edit_product, name='edit_product'),
+    path('dashboard/delete_product/<uuid:product_id>/', delete_product, name='delete_product'),
+
+    # path('dashboard/user/account/',user_dash, name='user_dash'),
+    path('wizapp/fetch-inventory/', fetch_inventory_from_wizapp, name='fetch_inventory_wizapp'),
+    
+    #logistics (shadowfax hyperlocal)
+    path('place-order/', place_order, name='place_order'),
+    path('order/status/<int:sfx_order_id>/', get_order_status, name='get_order_status'),
+    path('order/cancel/<int:sfx_order_id>/', cancel_order, name='cancel_order'),
+
+    #logistics (shadowfax flash)
+    path("order/workflow/", sfx_flash_order_workflow, name="order_workflow"),  # Handles steps 1-3
+    path("order/cancel/", sfx_cancel_order, name="cancel_order"),       # Cancel order
+    path("order/track/<int:order_id>/", sfx_track_order, name="track_order"),  # Track order
 
 
-
-
-
-
-
+    path('autocomplete/', ola_autocomplete, name='ola_autocomplete'),
+    path('reverse-geocode/', ola_reverse_geocode, name='ola_reverse_geocode'),
 
 
 
