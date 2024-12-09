@@ -50,7 +50,8 @@ SECRET_KEY = 'django-insecure-^*3ong@!=4^anv_=44s&7iyo40%d_^-hlh)k1*^_#!!kk3&vz+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app','*' ,'zany-space-cod-7j49q7vqgj42rgv-8000.app.github.dev','192.168.104.67']
+
+ALLOWED_HOSTS = ['*', 'rapparelsolutions.com', 'www.rapparelsolutions.com' ]
 # settings.py
 AUTH_USER_MODEL = 'quickcommerce.User'
 
@@ -172,7 +173,7 @@ DATABASES = {
         'NAME': 'verceldb',          # The name of the database
         'USER': 'default',            # Your PostgreSQL username
         'PASSWORD': 'b5HERho0cIux',   # Your PostgreSQL password
-        'HOST': 'ep-jolly-haze-a4k7ak4t-pooler.us-east-1.aws.neon.tech',  # The host address of the database
+        'HOST': 'ep-jolly-haze-a4k7ak4t.us-east-1.aws.neon.tech',  # The host address of the database
         'PORT': '5432',               # Default PostgreSQL port (you can adjust if needed)
          'OPTIONS': {
             'options': 'endpoint=ep-jolly-haze-a4k7ak4t',   # Use the endpoint ID

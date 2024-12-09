@@ -151,7 +151,8 @@ urlpatterns = [
     path('autocomplete/', ola_autocomplete, name='ola_autocomplete'),
     path('reverse-geocode/', ola_reverse_geocode, name='ola_reverse_geocode'),
 
-
+    path('about-us/', about_us_page, name='about_us'),
+    path('contact-us/', contact_us_page, name='contact_us'),
 
 
     # Add other URL patterns here

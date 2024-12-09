@@ -510,8 +510,10 @@ class StoreDetailView(View):
         products = Product.objects.filter(store=store)
         store_address = f"{store.street_address}, {store.city}, {store.state}" if store.street_address else None
         attributes = Attribute.objects.filter(values__products__store=store).distinct()
-        wishlisted_products = Wishlist.objects.filter(user=request.user).values_list('product__id', flat=True)
-
+        if isinstance(request.user, AnonymousUser):
+            wishlisted_products = None
+        else:
+            wishlisted_products = Wishlist.objects.filter(user=request.user).values_list('product__id', flat=True)
         # Prepare the context for rendering
         context = {
             'store': store,
@@ -3437,3 +3439,31 @@ def ola_reverse_geocode(request):
         return JsonResponse({"error": "No address found for the given coordinates"}, status=404)
     except requests.RequestException as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+def about_us_page(request):
+    return render(request, 'about_us.html')
+
+def contact_us_page(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+
+        email_subject = f"Contact Form Submission - {subject}"
+        email_message = f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
+
+        try:
+            send_mail(
+                email_subject,
+                email_message,
+                [settings.DEFAULT_FROM_EMAIL],  # Sender email
+                [settings.ADMIN_EMAIL],  # Recipient email
+                fail_silently=False,
+            )
+            return JsonResponse({'message': 'Your message has been sent successfully!'}, status=200)
+        except Exception as e:
+            return JsonResponse({'message': 'Oops! Something went wrong. Please try again later.'}, status=400)
+
+    return render(request, 'contact_us.html')
