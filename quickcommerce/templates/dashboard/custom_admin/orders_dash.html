@@ -44,6 +44,7 @@
             <tr>
                 <th>#</th>
                 <th>Order ID</th>
+                <th>Placed At</th>
                 <th>Customer Name</th>
                 <th>Amount</th>
                 <th>Status</th>
@@ -102,6 +103,8 @@
 
 <!-- jQuery and AJAX -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1.10.7/dayjs.min.js"></script>
+
 <script>
     $(document).ready(function() {
         function getQueryParam(param) {
@@ -134,11 +137,13 @@ async function loadOrders(page = 1, searchQuery = '') {
         const fragment = $(document.createDocumentFragment());
 
         response.orders.forEach((order, index) => {
+            const fullName = response.is_store_owner ? `${order.full_name.slice(0, 1)}****` : order.full_name;
             const row = `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${order.order_no}</td>
-                    <td>${order.full_name}</td>
+                    <td>${dayjs(order.placed_at).format('DD MMM YYYY, hh:mm A')}</td>
+                    <td>${fullName}</td>
                     <td>₹${order.total_amount}</td>
                     <td id="order-status-${order.id}">${order.order_status}</td>
                     <td>
@@ -245,12 +250,16 @@ loadOrders(currentPage, searchQuery);
                 url: '/dashboard/orders/' + orderId + '/details/',
                 method: 'GET',
                 success: function(data) {
+                    const Customer = data.is_store_owner ? `${data.customer.slice(0, 1)}****` : data.customer;
+                    const email = data.is_store_owner ? `${data.email.slice(0, 1)}****` : data.email;
+                    const phoneNumber = data.is_store_owner ? `${data.phone_number.slice(0, 2)}****` : data.phone_number;
                     // Inject order details into the popup
                     $('#orderPopupBody').html(`
                         <p><strong>Order ID:</strong> ${data.order_id}</p>
-                        <p><strong>Customer:</strong> ${data.customer}</p>
-                        <p><strong>Email:</strong> ${data.email}</p>
-                        <p><strong>Phone Number:</strong> ${data.phone_number}</p>
+                        <p><strong>Placed At:</strong> ${dayjs(data.placed_at).format('DD MMM YYYY, hh:mm A')}</p>
+                        <p><strong>Customer:</strong> ${Customer}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Phone Number:</strong> ${phoneNumber}</p>
                         <p><strong>Address:</strong> ${data.address}</p>
                         <p><strong>Total Amount:</strong> ₹${data.total_amount}</p>
                         <p><strong>Payment Status:</strong> ${data.payment_status}</p>
@@ -268,20 +277,20 @@ loadOrders(currentPage, searchQuery);
                     `);
                     startTimer(data.id, data.placed_at, data.order_status);
 
-                    // Show the popup
-            $('#orderPopup').fadeIn();
+                    $('#orderPopup').fadeIn();
 
-// Append action buttons if timer is not 00:00
-const timerValue = $(`#timer-${data.order_id}`).text();
-if (timerValue !== '00:00') {
-    $('#orderPopupBody').append(`
-        <div id="orderPopupActions">
-            <button id="acceptOrderBtn" class="btn btn-success">Accept</button>
-            <button id="rejectOrderBtn" class="btn btn-danger">Reject</button>
-        </div>
-    `);
+                // Poll the timer value until it updates
+            setTimeout(() => {
+                const timerValue = $(`#timer-${data.id}`).text();
+                if (timerValue !== '00:00') {
+                    $('#orderPopupBody').append(`
+                        <div id="orderPopupActions">
+                            <button id="acceptOrderBtn" class="btn btn-success">Accept</button>
+                            <button id="rejectOrderBtn" class="btn btn-danger">Reject</button>
+                        </div>
+                    `);
 
-    // Attach event listeners for accept/reject buttons
+             // Attach event listeners for accept/reject buttons
     $('#acceptOrderBtn').off('click').on('click', function() {
         $.ajax({
             url: '/dashboard/orders/' + orderId + '/update_status/',
@@ -322,7 +331,11 @@ if (timerValue !== '00:00') {
             }
         });
     });
-}
+        }
+    }, 1000);
+    
+   
+
                 },
                 error: function() {
                     alert('Failed to load order details');
@@ -358,7 +371,7 @@ if (timerValue !== '00:00') {
                             // Populate the popup with order details
                             $('#orderPopupBody').html(`
                                 <p><strong>Order ID:</strong> ${order.order_no}</p>
-                                <p><strong>Customer:</strong> ${order.customer}</p>
+                                <p><strong>Placed At:</strong> ${dayjs(order.placed_at).format('DD MMM YYYY, hh:mm A')}</p>
                                 <p><strong>Total Amount:</strong> ₹${order.total_amount}</p>
                                 <p><strong>Order Status:</strong> ${order.order_status}</p>
                                 <p><strong>Payment Status:</strong> ${order.payment_status}</p>

@@ -177,6 +177,9 @@ Checkout - Rapparel
                 <div class="mb-3">
                     <label for="postal-code" class="form-label">Postal Code</label>
                     <input type="text" name="postal_code" id="postal-code" class="form-control" required>
+                    <div id="postal-code-error" style="color: red; display: none;">
+                        Sorry, we currently do not service this area. Please check the postal code and try again.
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="country" class="form-label">Country</label>
@@ -408,10 +411,10 @@ function updateCartItem(cartItemId, newQuantity, action) {
     });
 }
 
-// Separate function to delete cart item
-function deleteCartItem(cartItemId) {
-    updateCartItem(cartItemId, 0, 'delete');  // Reuse the updateCartItem function with action 'delete'
-}
+    // Separate function to delete cart item
+    function deleteCartItem(cartItemId) {
+        updateCartItem(cartItemId, 0, 'delete');  // Reuse the updateCartItem function with action 'delete'
+    }
 
 
 
@@ -423,7 +426,17 @@ function deleteCartItem(cartItemId) {
     // Handle form submission via AJAX
     $("#add-address-form").on("submit", function(e) {
         e.preventDefault();  // Prevent the form from submitting normally
+        const validPostalCodes = ['122001', '122018', '122002', '122016', '122009']; // Add more Gurgaon postal codes here if needed
 
+        // Get the postal code entered by the user
+        const postalCode = $("#postal-code").val();
+
+        if (!validPostalCodes.includes(postalCode)) {
+            $("#postal-code-error").show();  // Show the error message
+            return;  // Stop form submission
+        } else {
+            $("#postal-code-error").hide();  // Hide the error message
+        }
         $.ajax({
             url: "{% url 'add_address' %}",  // URL where the form will be submitted
             type: "POST",

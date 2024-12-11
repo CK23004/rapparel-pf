@@ -6,6 +6,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
 
+
 urlpatterns = [
 
     path('home', home, name='home'),
@@ -82,7 +83,7 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('password-reset/', PasswordResetView.as_view(), name='password_reset'),
     path('password-reset/done/', TemplateView.as_view(template_name="registration/password_reset_done.html"), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', TemplateView.as_view(template_name="registration/password_reset_confirm.html"), name='password_reset_confirm'),
+    path('reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(template_name="registration/password_reset_confirm.html"), name='password_reset_confirm'),
     path('reset/done/', TemplateView.as_view(template_name="registration/password_reset_complete.html"), name='password_reset_complete'),
     path('', LandingPageView.as_view(), name='landing_page'),
     path('api/saved-addresses/', fetch_saved_addresses, name='fetch_saved_addresses'),
@@ -153,8 +154,8 @@ urlpatterns = [
 
     path('about-us/', about_us_page, name='about_us'),
     path('contact-us/', contact_us_page, name='contact_us'),
-
-
+    path('terms-conditions/', terms_conditions, name='terms_conditions'),
+    path('privacy-policy/', privacy_policy, name='privacy_policy'),
     # Add other URL patterns here
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

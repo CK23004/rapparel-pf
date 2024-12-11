@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .permissions import IsAdminUser, IsManagerUser, IsStaffUser
 from rest_framework.parsers import MultiPartParser, FormParser
-from .forms import PasswordResetForm
+from .forms import PasswordResetForm, CustomSetPasswordForm
+from django.contrib.auth.views import PasswordResetConfirmView
 
 from rest_framework import status, generics,serializers
 from django.db.models import Sum, F,Count
@@ -1549,7 +1550,6 @@ def logout_view(request):
     return redirect('login')  # Redirect to the login page after logout
 
 
-
 class PasswordResetView(FormView):
     template_name = 'registration/password_reset_form.html'
     success_url = reverse_lazy('password_reset_done')
@@ -1563,17 +1563,38 @@ class PasswordResetView(FormView):
         associated_users = User.objects.filter(email=email)
 
         if associated_users.exists():
-            opts = {
-                'use_https': self.request.is_secure(),
-                'token_generator': default_token_generator,
-                'from_email': self.from_email,
-                'email_template_name': self.email_template_name,
-                'subject_template_name': self.subject_template_name,
-                'request': self.request,
-            }
-            form.save(**opts)
+            for user in associated_users:
+                context = {
+                    'email': user.email,
+                    'domain': self.request.get_host(),
+                    'site_name': 'Rapparel',
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    'user': user,
+                    'token': default_token_generator.make_token(user),
+                    'protocol': 'https' if self.request.is_secure() else 'http',
+                }
+
+                # Render email subject and body
+                subject = render_to_string(self.subject_template_name, context).strip()
+                email_body = render_to_string(self.email_template_name, context)
+
+                # Send the email
+                send_mail(
+                    subject,
+                    email_body,
+                    self.from_email,
+                    [user.email],
+                    fail_silently=False,
+                )
 
         return super().form_valid(form)
+
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'registration/password_reset_confirm.html'
+    success_url = reverse_lazy('password_reset_complete')
+    form_class = CustomSetPasswordForm
+
 
 
 
@@ -2588,12 +2609,12 @@ def delete_product(request, product_id):
 @login_required
 def orders_page(request):
     if not request.user.is_staff:
-        return render(request, 'errors/403.html', status=403)
+        return HttpResponseBadRequest(request, status=403)
+
 
     # Fetch search query if provided
     search_query = request.GET.get('search', '').strip()
     orders = Order.objects.all()
-
     # Apply search filters if a query exists
     if search_query:
         orders = orders.filter(
@@ -2623,6 +2644,7 @@ def serialize_order(order):
         'id': order.id,
         'order_no': order.order_no,
         'full_name': order.full_name,
+        'placed_at': order.placed_at,
         'total_amount': order.total_amount,
         'order_status': order.order_status,
     }
@@ -2633,7 +2655,8 @@ def serialize_order(order):
 def ajax_orders(request):
     # Fetch search query if provided
     search_query = request.GET.get('search', '').strip()
-    orders = Order.objects.all()
+    orders = Order.objects.all().order_by('-placed_at')
+    is_store_owner = request.user.groups.filter(name='Store Owner').exists()
 
     # Apply search filters if a query exists
     if search_query:
@@ -2658,6 +2681,7 @@ def ajax_orders(request):
     orders_data = [serialize_order(order) for order in page_obj]
     response = {
         'orders': orders_data,
+        'is_store_owner' : is_store_owner,
         'pagination': {
             'has_next': page_obj.has_next(),
             'has_previous': page_obj.has_previous(),
@@ -2672,6 +2696,7 @@ def ajax_orders(request):
 def order_details(request, order_id):
     # Fetch order details by ID
     order = get_object_or_404(Order, id=order_id)
+    is_store_owner = request.user.groups.filter(name='Store Owner').exists()
 
     # Returning order details as JSON for frontend use (if needed)
     order_items = [{
@@ -2682,6 +2707,7 @@ def order_details(request, order_id):
     } for item in order.order_items.all()]
 
     order_data = {
+        'is_store_owner': is_store_owner,
         'id':order.id,
         'order_id': order.order_no,
         'customer': order.full_name,
@@ -3467,3 +3493,10 @@ def contact_us_page(request):
             return JsonResponse({'message': 'Oops! Something went wrong. Please try again later.'}, status=400)
 
     return render(request, 'contact_us.html')
+
+
+def terms_conditions(request):
+    return render(request, 'legal/terms-and-conditions.html')
+
+def privacy_policy(request):
+    return render(request, 'legal/privacy-policy.html')
