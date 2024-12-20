@@ -1,0 +1,10 @@
+/***** Custom admin logo *****/
+#header-logo {
+    background: url('/static/img/logo.png') no-repeat left center;
+    width: 150px; /* Adjust width according to your logo */
+    height: auto;
+    text-indent: -9999px;
+    background-size: contain;
+}
+
+

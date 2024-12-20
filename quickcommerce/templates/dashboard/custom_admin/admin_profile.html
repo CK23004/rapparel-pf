@@ -1,0 +1,230 @@
+{% extends 'dashboard/custom_admin/base_dash.html' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+
+<style>
+    .tabs {
+        display: flex;
+        border-bottom: 2px solid #ccc;
+    }
+    .tabs button {
+        padding: 10px 20px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        outline: none;
+        font-size: 16px;
+    }
+    .tabs button.active {
+        border-bottom: 2px solid #007BFF;
+        color: #007BFF;
+        background: none !important;
+    }
+    .tab-content {
+        display: none;
+        padding: 20px;
+    }
+    .tab-content.active {
+        display: block;
+        background: none !important;
+        border : none;
+    }
+    .image-preview {
+        width: 200px;
+        height: 150px;
+        margin-top: 10px;
+        object-fit: cover;
+    }
+    .banner-box {
+        width: 800px;
+        height: 200px;
+        object-fit: cover;
+        border: 2px solid #ccc;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+    .display-box {
+        width: 300px;
+        height: 200px;
+        object-fit: contain;
+        border: 2px solid #ccc;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+    .image-box {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px;
+    }
+    .image-box input[type="file"] {
+        margin-top: 10px;
+    }
+    @media(max-width:760px){
+        .form-container{
+            margin-top: 11rem !important;
+        }
+    }
+</style>
+
+<div class="container pt-5 pb-5">
+
+    <h2 class="mb-4 text-center">Edit Your Profile</h2>
+
+    <div class="mb-3">
+        <label><strong>Your Role:</strong> {{ user_role }}</label>
+    </div>
+
+    {% if message %}
+    <div id="alertMessage" class="alert alert-danger">
+        {{ message }}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="first_name">First Name:</label>
+                <input type="text" name="first_name" class="form-control" id="first_name" value="{{ user.first_name }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="last_name">Last Name:</label>
+                <input type="text" name="last_name" class="form-control" id="last_name" value="{{ user.last_name }}" required>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="phone_number">Phone Number:</label>
+                <input type="text" name="phone_number" class="form-control" id="phone_number" value="{{ user.phone_number }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="email">Email (will be used as a Username):</label>
+                <input type="email" name="email" class="form-control" id="email" value="{{ user.email }}" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Details</button>
+    </form>
+
+    <h3 class="pt-3">Store Details</h3>
+
+    <div class="tabs">
+        {% for store in stores %}
+        <button class="{% if forloop.first %}active{% endif %}" data-tab="tab-{{ store.id }}">
+            {{ store.name }}
+        </button>
+        {% endfor %}
+    </div>
+
+    {% for store in stores %}
+    <div id="tab-{{ store.id }}" class="tab-content {% if forloop.first %}active{% endif %}">
+        <h2>{{ store.name }}</h2>
+
+        <div class="row">
+            <!-- First Column: Store details (Address, Contacts, Commission) -->
+            <div class="col-md-6">
+                <p><strong>Address:</strong> {{ store.street_address }}, {{ store.city }}, {{ store.state }}, {{ store.country }}</p>
+                <p><strong>Owner Contact:</strong> {{ store.owner_contact }}</p>
+                <p><strong>Owner Email:</strong> {{ store.owner_email }}</p>
+                <p><strong>Contact Person Name:</strong> {{ store.contact_person_name }}</p>
+                <p><strong>Contact Person Number:</strong> {{ store.contact_person_number }}</p>
+                <p><strong>Commission Rate:</strong> {{ store.commission_rate }}%</p>
+                <p><strong>Inventory Software:</strong> Unicommerce</p>
+                <p><strong>Categories:</strong> Casual</p>
+                <p><strong>Brands:</strong> Hermes, Zara, Gucci</p>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="text" name="store_id" id="store_id" hidden value="{{ store.id }}">
+                    {% csrf_token %}
+                    
+        
+                     <!-- Display Image with Update Options -->
+                    <div class="image-box">
+                        <label for="display_image">Update Display Image:</label>
+                        <input type="file" name="display_image" id="display_image" accept="image/*" onchange="previewImage(this, 'displayPreview')" >
+                        <img id="displayPreview" src="" alt="Image Preview" style="display:none; max-width: 200px; margin-top: 10px;"/>
+                    </div>
+        
+        
+                    <!-- Banner Image Update -->
+                    <div class="image-box">
+                        <label for="banner_image">Update Banner Image:</label>
+                        <input type="file" name="banner_image" id="banner_image" accept="image/*" onchange="previewImage(this, 'bannerPreview')" >
+                        <img id="bannerPreview" src="" alt="Image Preview" style="display:none; max-width: 200px; margin-top: 10px;"/>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Update Images</button>
+                </form>
+            </div>
+
+            <!-- Second Column: Images (Display Image and Banner Image) -->
+            <div class="col-md-6">
+                <!-- Display Image -->
+                <strong>Display Image (1.5:1):</strong>
+                <div class="display-box mb-3">
+                    {% if store.display_image %}
+                        <img src="{{ store.display_image.url }}" alt="Display Image" class="img-fluid w-100" style="height: auto; aspect-ratio: 1.5;"/>
+                    {% else %}
+                        <p>No display image available. <span class="text-muted">Upload one to update.</span></p>
+                    {% endif %}
+                </div>
+
+                <!-- Banner Image -->
+                <strong>Banner Image (4:1):</strong>
+                <div class="banner-box">
+                    {% if store.banner_image %}
+                        <img src="{{ store.banner_image.url }}" alt="Banner Image" class="img-fluid w-100" style="height: auto; aspect-ratio: 4;"/>
+                    {% else %}
+                        <p>No banner image available. <span class="text-muted">Upload one to update.</span></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        
+
+       
+
+        
+       
+    </div>
+    {% endfor %}
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Select the alert div
+        const alertDiv = $("#alertMessage");
+        if (alertDiv.length) {
+            setTimeout(function() {
+                alertDiv.fadeOut(500, function() {
+                    $(this).remove();
+                });
+            }, 5000);
+        }
+
+        $('.tabs button').on('click', function () {
+            $('.tabs button').removeClass('active');
+            $('.tab-content').removeClass('active');
+            $(this).addClass('active');
+            $('#' + $(this).data('tab')).addClass('active');
+        });
+
+        // Image preview functionality
+        window.previewImage = function (input, previewId) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#' + previewId).attr('src', e.target.result).show();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+    });
+</script>
+
+{% endblock %}

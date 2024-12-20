@@ -1,0 +1,34 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <h2>Select Products to Save or Discard</h2>
+  <form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <table>
+      <thead>
+        <tr>
+          <th>Select</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Brand</th>
+          <th>MRP</th>
+          <th>Sale Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products_data %}
+        <tr>
+          <td>{{ form.selected_products }} </td>
+          <td>{{ product.name }}</td>
+          <td>{{ product.category }}</td>
+          <td>{{ product.brand }}</td>
+          <td>{{ product.mrp }}</td>
+          <td>{{ product.sale_price }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="submit" name="save_selected">Save Selected Products</button>
+    <button type="submit" name="discard_all">Discard All</button>
+  </form>
+{% endblock %}

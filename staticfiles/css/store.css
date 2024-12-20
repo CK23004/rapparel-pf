@@ -1,0 +1,154 @@
+/* External styles */
+/* .store-banner {
+    position: relative;
+    background-image: url('https://via.placeholder.com/1200x300');
+    background-size: cover;
+    background-position: center;
+    height: 300px;
+    border-radius: 10px;
+  } */
+
+  .store-banner h1, .store-banner p {
+    font-size: 3rem;
+    font-weight: bold;
+    color: white;
+    position: absolute;
+    left: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .filter-sidebar {
+    position: sticky;
+    top: 20px;
+  }
+
+/* Product Card Styles */
+.product-card {
+    position: relative;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.2s ease;
+  }
+
+  .product-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .product-card img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+  }
+
+  .product-card .card-body {
+    text-align: center;
+    padding: 15px;
+  }
+
+  .product-card .card-body h5 {
+    font-weight: 600;
+  }
+
+  .product-card .price {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #333;
+  }
+
+  /* Styling for Add to Cart button */
+.product-card .btn {
+background-color: #ff3d58;
+color: white;
+transition: background-color 0.3s ease;
+}
+
+/* Add to Cart button hover effect */
+.product-card .btn:hover {
+background-color: #ff3d58;
+box-shadow: 0px 4px 10px rgba(255, 107, 129, 0.5);
+}
+
+/* Wishlist icon */
+.wishlist-icon  {
+position: absolute;
+top: 10px;
+right: 10px;
+color: #ff3d58;
+font-size: 1.5rem;
+cursor: pointer;
+transition: color 0.3s ease;
+}
+
+/* Wishlist icon when filled */
+.wishlist-icon.active {
+color: #ff3d58;
+}
+
+
+
+  /* Location and ETA section */
+  .location-eta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .location-eta .location,
+  .location-eta .eta {
+    flex: 1;
+  }
+
+  .location-eta .eta {
+    text-align: right;
+  }
+
+  .location-eta select,
+  .location-eta span {
+    font-size: 1.1rem;
+  }
+
+  .eta span {
+    font-size: 1.1rem;
+    color: #333;
+  }
+
+  /* Tab View for Categories */
+  .nav-tabs {
+    border-bottom: 2px solid #ddd;
+  }
+
+  .nav-tabs .nav-link {
+    color: #333;
+    font-weight: 500;
+  }
+
+  .nav-tabs .nav-link.active {
+    background-color: #ff3d58;
+    color: white;
+    border: none;
+  }
+
+  /* Price Slider */
+  .price-range {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .price-range input[type="range"] {
+    width: 100%;
+  }
+
+  .price-boxes {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .price-boxes input {
+    width: 45%;
+  }

@@ -1,0 +1,162 @@
+{% extends 'base_auth.html' %}
+
+{% block title %}Create Account | Rapparel {% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h4 class="text-center mb-4">Create an account</h4>
+    <p class="text-center text-muted mb-4">Enter your details to sign up for this app</p>
+
+    <form id="registerForm" method="post" action="{% url 'signup' %}">
+        {% csrf_token %}
+        
+        <!-- Full Name Input -->
+        <div class="mb-3">
+            <input type="text" id="fullName" name="full_name" class="form-control" placeholder="Full Name" required>
+            <div class="invalid-feedback" id="fullNameError"></div>
+        </div>
+
+        <!-- Email Input -->
+        <div class="mb-3">
+            <input type="email" id="email" name="email" class="form-control" placeholder="Email" required>
+            <div class="invalid-feedback" id="emailError"></div>
+        </div>
+
+        <!-- Phone Number Input -->
+        <div class="mb-3">
+            <input type="text" id="phoneNumber" name="phone_number" class="form-control" placeholder="Phone Number" required>
+            <div class="invalid-feedback" id="phoneNumberError"></div>
+        </div>
+
+        <!-- Password Input -->
+       <!-- Password Input -->
+        <div class="mb-3">
+            <div class="input-group">
+                <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
+                <span class="input-group-text" onclick="togglePassword()">
+                    <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                </span>
+            </div>
+            <div class="invalid-feedback" id="passwordError"></div>
+        </div>
+
+        <!-- Confirm Password Input -->
+        <div class="mb-3">
+            <input type="password" id="confirmPassword" name="confirm_password" class="form-control" placeholder="Confirm Password" required>
+            <div class="invalid-feedback" id="confirmPasswordError"></div>
+        </div>
+
+        <!-- Checkbox for Terms & Conditions -->
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="terms" required>
+            <label class="form-check-label" for="terms">
+                I agree to Rapparel's <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+            </label>
+            <div class="invalid-feedback" id="termsError">You must agree to the terms.</div>
+        </div>
+
+        <!-- Create Account Button -->
+        <button type="submit" class="btn btn-primary w-100 mb-3">Create Account</button>
+    </form>
+
+    <!-- Already have an account -->
+    <p class="text-center">
+        Already have an account? <a href="/login" class="text-danger">Login</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+   $(document).ready(function() {
+    clearErrors();
+    $("#registerForm").on("submit", function(event) {
+        event.preventDefault(); // Prevent form submission for validation
+
+        // Clear previous errors
+        clearErrors();
+
+        let isValid = true;
+
+        // Validate Full Name
+        const fullName = $("#fullName").val();
+        if (fullName.length < 3) {
+            isValid = false;
+            displayError("#fullName", "#fullNameError", "Full Name must be at least 3 characters long.");
+        }
+
+        // Validate Email
+        const email = $("#email").val();
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email)) {
+            isValid = false;
+            displayError("#email", "#emailError", "Please enter a valid email address.");
+        }
+
+        // Validate Phone Number
+        const phoneNumber = $("#phoneNumber").val();
+        const phonePattern = /^[0-9]{10,15}$/;
+        if (!phonePattern.test(phoneNumber)) {
+            isValid = false;
+            displayError("#phoneNumber", "#phoneNumberError", "Please enter a valid phone number (10-15 digits).");
+        }
+
+        // Validate Password
+        const password = $("#password").val();
+        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+        if (!passwordPattern.test(password)) {
+            isValid = false;
+            displayError("#password", "#passwordError", "Password must be at least 8 characters long, contain one uppercase letter, one lowercase letter, one number, and one special character.");
+        }
+
+        // Validate Confirm Password
+        const confirmPassword = $("#confirmPassword").val();
+        if (password !== confirmPassword) {
+            isValid = false;
+            displayError("#confirmPassword", "#confirmPasswordError", "Passwords do not match.");
+        }
+
+        // Validate Terms & Conditions
+        const terms = $("#terms").is(":checked");
+        if (!terms) {
+            isValid = false;
+            displayError("#terms", "#termsError", "You must agree to the terms.");
+        }
+
+        // If all validations pass, submit the form
+        if (isValid) {
+            $("#registerForm")[0].submit();
+        }
+    });
+
+    function clearErrors() {
+        $(".form-control").removeClass("is-invalid");
+        $(".invalid-feedback").text("");
+    }
+
+    function displayError(inputSelector, errorSelector, errorMessage) {
+        $(inputSelector).addClass("is-invalid");
+        $(errorSelector).text(errorMessage);
+    }
+
+    $("#togglePasswordIcon").on("click", function() {
+        const passwordField = $('#password');
+        const confirmPasswordField = $('#confirmPassword');
+        const toggleIcon = $('#togglePasswordIcon');
+
+        if (passwordField.attr('type') === 'password' && confirmPasswordField.attr('type') === 'password') {
+            passwordField.attr('type', 'text');
+            confirmPasswordField.attr('type', 'text');
+            toggleIcon.removeClass('bi-eye').addClass('bi-eye-slash');
+        } else {
+            passwordField.attr('type', 'password');
+            confirmPasswordField.attr('type', 'password');
+            toggleIcon.removeClass('bi-eye-slash').addClass('bi-eye');
+        }
+    });
+});
+
+</script>
+{% endblock %}
