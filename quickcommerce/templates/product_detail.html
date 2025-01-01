@@ -1,0 +1,590 @@
+{% extends 'base_index.html' %}
+
+{% block title %}{{ product.name }} - Product Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Product Main Section */
+    .product-main {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .product-main-image-wrapper {
+        width: 100%; /* Increased width for better alignment */
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .product-main-image {
+        width: 100%;
+        height: 500px; /* Increased height for alignment */
+        object-fit: cover;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .product-main-image:hover {
+        transform: scale(1.1); /* Zoom on hover but stay within the container */
+    }
+
+    .product-gallery img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        margin-right: 10px;
+        cursor: pointer;
+        border: 2px solid #ddd;
+    }
+
+    .product-gallery img:hover {
+        border-color: #f50057;
+    }
+
+    .price {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    .sale-price {
+        color: red;
+    }
+
+    .mrp {
+        text-decoration: line-through;
+        color: #888;
+    }
+
+    .product-details {
+        margin-top: 20px;
+    }
+
+    /* Sale Badge */
+    .badge-sale {
+        background-color: #f50057;
+        color: white;
+        font-size: 1rem;
+        padding: 5px;
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        border-radius: 5px;
+        z-index: 10;
+    }
+
+    /* Wishlist and Share Icons */
+    .wishlist-share-icons {
+        display: flex;
+        margin-bottom: 20px;
+        margin-left: 0;
+        justify-content: flex-start;
+    }
+
+    .wishlist-share-icons i {
+        font-size: 1.5rem;
+        margin-right: 10px;
+        cursor: pointer;
+    }
+
+    .wishlist-share-icons i.active {
+        color: #f50057; /* Change to pink if wishlisted */
+    }
+
+    /* Stock Information */
+    .stock-info {
+        margin-top: 15px;
+        font-size: 1rem;
+        color: #28a745;
+    }
+
+    .out-of-stock {
+        color: red;
+    }
+
+    /* Size and Color Options */
+    .size-options button, .color-options button {
+        border: 1px solid #ddd;
+        padding: 5px 10px;
+        margin: 5px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        background-color: white;
+    }
+
+    .size-options button.active, .color-options button.active {
+        border-color: #f50057;
+        background-color: #f50057;
+        color: white;
+    }
+
+    /* Button Styling */
+    .add-to-cart-btn, .buy-now-btn {
+        width: 48%;
+        margin-top: 20px;
+        background-color: #f50057;
+        border: none;
+        color: white;
+    }
+
+    /* Read More for Description */
+    .description {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;  /* Limit description to 4 lines */
+        -webkit-box-orient: vertical;
+    }
+
+    .read-more-btn {
+        color: #f50057;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    /* Size Chart Modal */
+    .modal-header {
+        background-color: #f8f9fa;
+    }
+
+    .modal-body ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .modal-body ul li {
+        padding: 5px 0;
+    }
+    /* Style for variant options */
+.variant-option {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 5px;
+    text-align: center;
+    background-color: #f0f0f0;
+    transition: background-color 0.3s ease;
+}
+
+/* Active class for variant button */
+.variant-option.active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Style for variant details */
+.variant-details {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-top: 10px;
+    background-color: #f9f9f9;
+    display: none; /* Initially hidden */
+}
+
+/* Style for hidden variant details */
+.variant-details p {
+    margin: 5px 0;
+}
+
+    @media (max-width:768px) {
+
+        .row{
+            margin-top: 9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container product-details">
+    <div class="row product-main">
+      
+                <!-- Main product image and gallery -->
+                <div class="col-md-6">
+                    <div class="product-main-image-wrapper">
+                        <img id="mainProductImage" src="{{ product.image.url }}" alt="{{ product.name }}" class="product-main-image">
+                        {% if discount_percentage > 0 %}
+                        <span class="badge-sale" id="badge-sale">{{ discount_percentage }}% OFF</span>
+                        {% endif %}
+                    </div>
+                    <div class="product-gallery mt-3 d-flex">
+                        <img src="{{ product.image.url }}" alt="Gallery Image" class="product-gallery-image" id="galleryproductImage"  onclick="updateMainImage('{{ product.image.url }}')">
+                        {% for image in gallery_images %}
+                        <img src="{{ image.image.url }}" alt="Gallery Image" class="product-gallery-image" id="galleryImage{{ forloop.counter }}" onclick="updateMainImage('{{ image.image.url }}')">
+                        {% endfor %}
+                    </div>
+                </div>
+        
+                <!-- Product details and options -->
+                <div class="col-md-6">
+                    <h2>{{ product.name }}</h2>
+                    <p>Category: {{ product.category.name }}</p>
+                    <p>Subcategory: {{ product.subcategory.name }}</p>
+                    <p>Brand: {{ product.brand.name }}</p>
+        
+                    <!-- Wishlist and Share Icons -->
+                    <div class="wishlist-share-icons">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        
+                        <i data-product-slug="{{ product.slug }}" class="bi wishlist-icon {% if is_wishlisted %}bi-heart-fill active{% else %}bi-heart{% endif %}" title="Add to Wishlist"></i>
+                        <i class="bi bi-share" title="Share Product" onclick="shareProduct('{{ request.build_absolute_uri }}')"></i>
+                    </div>
+        
+                    <!-- Price Section -->
+                    <div class="price" id="dynamic-price">
+                        <span class="sale-price" id="price">Rs.{{ product.sale_price }}</span>
+                        <span class="mrp">Rs.{{ product.mrp }}</span>
+                    </div>
+        
+                    <!-- Variant Options -->
+                    <div class="attribute-options size-options">
+                        <p>Select a Variant</p>
+        
+                        {% for variant in variants %}
+                            {% if variant.attributes %}
+                                <!-- Variant Button -->
+                                <button class="variant-option size-option" data-variant-id="{{ forloop.counter }}">
+                                    {% for key, value in variant.attributes.items %}
+                                        {{ key | title }}: {{ value }}
+                                        {% if not forloop.last %} - {% endif %}
+                                    {% endfor %}
+                                </button>
+        
+                                <!-- Hidden Variant Details (not visible) -->
+                                <div class="hidden-variant-details" id="variant-details-{{ forloop.counter }}" style="display:none;">
+                                    <input type="hidden" class="variant-price" value="{{ variant.price }}">
+                                    <input type="hidden" class="variant-sku" value="{{ variant.sku }}">
+                                    <input type="hidden" class="variant-inventory" value="{{ variant.inventory }}">
+                                    <input type="hidden" class="variant-image" value="{{ variant.image.url }}">
+                                    <input type="hidden" class="variant-gallery" value="{{ variant.gallery|join:',' }}">
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        <a class="text-decoration-none" href="{% url 'download_sizechart' %}">See Size Chart</a>
+
+                    </div>
+
+
+
+            
+
+               
+
+
+
+            <!-- Product description (limited to 4 lines with "Read More") -->
+            <p class="description">{{ product.description }}</p>
+            <span class="read-more-btn" onclick="readMore()">Read More...</span>
+
+                        <!-- Add to cart and Buy Now buttons -->
+            <div class="d-flex">
+                <form action="{% url 'add_to_cart' %}" method="POST" class="d-flex align-items-center" id="add-to-cart-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <input type="hidden" name="variant_sku" id="variant-sku-input">
+                    <!-- Quantity input and Add to Bag button side by side -->
+                    <div class="d-flex " style="gap:10px; max-width: 15rem;">
+                        <div class="input-group me-2" style="max-width: 1000px; width: 90%;">
+                            <input type="number" name="quantity" value="1" class="form-control" min="1">
+                        </div>
+    
+                        <button type="submit" class="btn btn-danger" style="width: 340px;">Add to Bag</button>
+                    </div>
+                </form>
+            </div>
+
+           
+        </div>
+    </div>
+
+    <!-- Similar products section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3>Similar Products</h3>
+        
+            <div class="similar-products row">
+                {% for similar_product in product.get_similar_products %}
+                <div class="col-lg-3 product-card">
+                    <div class="card position-relative">
+                        <!-- Display Sale Badge if there's a discount -->
+                        {% if similar_product.sale_price < similar_product.mrp %}
+                        <span class="badge-sale">Sale</span>
+                        {% endif %}
+            
+                        <img src="{{ similar_product.image.url }}" alt="{{ similar_product.name }}" class="card-img-top">
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ similar_product.name }}</h5>
+            
+                            <!-- Price Section with Sale Price and MRP -->
+                            <p class="price">
+                                <span class="mrp text-muted text-sm" style="text-decoration: line-through;">Rs.{{ similar_product.mrp }}</span>
+                                <span class="sale-price text-danger">Rs.{{ similar_product.sale_price }}</span>
+                                
+                            </p>
+                            
+                            <a href="{% url 'product_detail' similar_product.slug %}" class="btn btn-primary btn-block">View Product</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+
+
+      
+       
+    </div>
+</div>
+
+<!-- Size Chart Modal -->
+<div class="modal fade" id="sizeChartModal" tabindex="-1" role="dialog" aria-labelledby="sizeChartModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sizeChartModalLabel">Size Chart</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <ul>
+          <li>Size Chart 1: XS, S, M, L, XL, XXL</li>
+          <li>Size Chart 2: US Sizes (6, 8, 10, 12)</li>
+          <li>Size Chart 3: European Sizes (38, 40, 42, 44)</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+
+    
+
+    document.querySelectorAll('.size-option').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('.size-option').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    $('#add-to-cart-form').submit(function(event) {
+        var variantSku = $('#variant-sku-input').val();  // Get value of variant_sku
+
+        // Check if variant_sku is empty
+        if (!variantSku) {
+            event.preventDefault();  // Prevent form submission
+
+            // Optionally, show an alert or error message
+            alert('Please select a variant before adding to the cart.');
+        }
+    });
+
+
+    $('.variant-option').click(function() {
+       
+        var variantId = $(this).data('variant-id');  // This gets the variant's ID (counter value)
+        
+        // Find the hidden details for this variant
+        var hiddenDetails = $('#variant-details-' + variantId);  // Select the hidden details div
+
+        // Retrieve the values from the hidden inputs
+        var sku = hiddenDetails.find('.variant-sku').val();
+        // Update the hidden SKU input with the selected variant SKU
+        $('#variant-sku-input').val(sku);
+
+        // Optionally, highlight the selected variant
+        $('.variant-option').removeClass('selected');
+        $(this).addClass('selected');
+    });
+
+    // Read More functionality for description
+    function readMore() {
+        const description = document.querySelector('.description');
+        description.style.display = 'block';
+        description.style.webkitLineClamp = 'unset';  // Remove line limit
+        document.querySelector('.read-more-btn').style.display = 'none';  // Hide "Read More" button
+    }
+
+     function changeMainImage(imageUrl) {
+        document.getElementById('mainProductImage').src = imageUrl;
+    }
+
+    
+     // Function to update the main product image
+     function updateMainImage(imageUrl) {
+        $('#mainProductImage').attr('src', imageUrl);
+    }
+    var originalMRP = parseFloat("{{ product.mrp }}"); 
+
+    function updateVariantDetails(variantId) {
+    // Get the base URL (hostname) of the current page
+    var baseUrl = window.location.origin;
+
+    // Find the hidden details for the selected variant
+    var variantDetails = $('#variant-details-' + variantId); 
+
+    // Extract data from hidden fields
+    var price = parseFloat(variantDetails.find('.variant-price').val()); // Convert price to float
+    var sku = variantDetails.find('.variant-sku').val();
+    var inventory = variantDetails.find('.variant-inventory').val();
+    // var mainImage = variantDetails.find('.variant-image').val();
+    // var galleryImages = variantDetails.find('.variant-gallery').val().split(',');
+
+    // Build absolute URL for main image
+    // var mainImageUrl = baseUrl + '/' + mainImage; // Assuming the image path is relative
+
+    
+    // // Update the main image with the variant-specific image
+    // $('#mainProductImage').attr('src', mainImageUrl);
+
+    // // Remove all existing gallery images
+    // $('.product-gallery-image').remove();
+
+    // // Insert new gallery images based on the variant's gallery images
+    // galleryImages.forEach(function(image, index) {
+    //     // Build absolute URL for each gallery image
+    //     var galleryImageUrl = baseUrl + '/' + image;
+
+    //     // Create a new image element
+    //     var newImage = $('<img>', {
+    //         src: galleryImageUrl,
+    //         alt: 'Gallery Image',
+    //         class: 'product-gallery-image',
+    //         id: 'galleryImage' + (index + 1), // Unique ID for each image
+    //         click: function() {
+    //             updateMainImage(galleryImageUrl); // Update main image on click
+    //         }
+    //     });
+
+    //     // Append the new image to the gallery container
+    //     $('.product-gallery').append(newImage);
+    // });
+
+    
+     // Update the price dynamically
+     if (price >= originalMRP) {
+        $('#badge-sale').hide();
+        // If sale price is greater than or equal to MRP, set sale price as MRP and hide MRP
+        $('#price').text('Rs.' + price.toFixed(2)); // Set sale price
+        $('.mrp').hide(); // Hide MRP
+    } else {
+        // Calculate discount percentage
+        var discountPercentage = Math.round(((originalMRP - price) / originalMRP) * 100);
+
+        // Update the sale price and MRP display
+        $('#price').text('Rs.' + price.toFixed(2)); // Update sale price
+        $('.mrp').text('Rs.' + originalMRP.toFixed(2)); // Display MRP
+        $('.mrp').show();
+        // Show the discount badge if a discount exists
+        if (discountPercentage > 0) {
+            $('#badge-sale').text(discountPercentage + '% OFF').show(); // Show the discount badge
+        } else {
+            $('#badge-sale').hide(); // Hide the discount badge if there's no discount
+        }
+    }
+
+    // Optionally, you can also update the variant's SKU and inventory if needed
+    $('#variant-sku').text(sku); // If you have a SKU element to display
+    $('#variant-inventory').text(inventory); // If you have an inventory element to display
+}
+    // Event listener for variant selection
+    $('.variant-option').on('click', function() {
+        var variantId = $(this).data('variant-id'); // Get the variant ID
+        updateVariantDetails(variantId); // Update the product details based on the selected variant
+
+        // Optionally, add 'active' class to highlight the selected variant
+        $('.variant-option').removeClass('active');
+        $(this).addClass('active');
+    });
+
+    // Event listener for gallery image click
+    $('.product-gallery-image').on('click', function() {
+        var newImageUrl = $(this).attr('src');
+        updateMainImage(newImageUrl);
+    });
+
+    $('.wishlist-icon').on('click', function () {
+    const icon = $(this);
+    const productSlug = icon.data('product-slug');  // Get the product slug from the data attribute
+    const isActive = icon.hasClass('active');  // Check if the product is already in the wishlist
+    const url = isActive ? `/wishlist/remove/${productSlug}/` : `/wishlist/add/${productSlug}/`;  // Dynamic URL based on action
+    const method = isActive ? 'DELETE' : 'POST';  // Use DELETE for removing, POST for adding
+
+    // Toggle UI first for instant feedback
+    icon.toggleClass('active');
+    if (icon.hasClass('active')) {
+        icon.removeClass('bi-heart').addClass('bi-heart-fill');  // Change to filled heart
+    } else {
+        icon.removeClass('bi-heart-fill').addClass('bi-heart');  // Change to outline heart
+    }
+
+    $('.variant-option').on('click', function() {
+        var variantId = $(this).data('variant-id');
+
+        // Hide all variant details first
+
+        // Show the details of the clicked variant
+        
+
+        // Toggle the 'active' class on the clicked variant option
+        $('.variant-option').removeClass('active');
+        $(this).addClass('active');
+    });
+
+       // AJAX request to add or remove the product from the wishlist
+    $.ajax({
+        url: url,
+        method: method,
+        data: {
+            product_slug: productSlug,
+            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()  // CSRF token for security
+        },
+        success: function (response) {
+            console.log(response.status);  // Optional: Display success message or feedback
+        },
+        error: function (error) {
+            console.error('Error:', error);
+            // Revert UI if the request fails
+            icon.toggleClass('active');
+            if (icon.hasClass('active')) {
+                icon.removeClass('bi-heart').addClass('bi-heart-fill');  // Change back to filled heart
+            } else {
+                icon.removeClass('bi-heart-fill').addClass('bi-heart');  // Change back to outline heart
+            }
+        }
+    });
+});
+
+
+
+   // Share Product Functionality
+function shareProduct(link) {
+    const shareIcon = document.querySelector('.bi-share');
+    
+    navigator.clipboard.writeText(link).then(function() {
+        // Show a tick or change the icon temporarily
+        shareIcon.classList.remove('bi-share');
+        shareIcon.classList.add('bi-check-circle'); // Add a checkmark icon
+
+        // After 2 seconds, revert back to the share icon
+        setTimeout(function() {
+            shareIcon.classList.remove('bi-check-circle');
+            shareIcon.classList.add('bi-share'); // Revert to the share icon
+        }, 2000); // 2 seconds
+    }, function(err) {
+        // Handle error case if copy fails
+        shareIcon.classList.add('text-danger');
+        shareIcon.title = "Failed to copy link!";
+    });
+}
+
+</script>
+{% endblock %}
+

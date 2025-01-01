@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+<script>
+$(document).ready(function() {
+    // Replace with your actual API endpoint
+    const apiUrl = '/api/users/customers';
+
+    // Perform GET request on page load
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        headers: {
+            'Authorization': 'Token f2c6addf15631256bca51f086f8bc778cda04f03'
+        },
+        success: function(response) {
+            console.log('API response:', response);
+            // You can process or display the response here
+        },
+        error: function(error) {
+            console.error('Error making the GET request:', error);
+        }
+    });
+});
+</script>
+
+</body>
+</html>

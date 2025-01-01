@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Upload & Wizapp Inventory Sync</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .loading {
+            display: none;
+            font-size: 18px;
+            color: #f39c12;
+        }
+        .status {
+            font-size: 16px;
+        }
+        .completed {
+            color: green;
+        }
+        .failed {
+            color: red;
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Product Upload & Wizapp Inventory Sync</h1>
+
+        <!-- CSV File Upload Form -->
+        <form id="uploadForm" action="" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="csv_file" class="form-label">Select CSV File:</label>
+                <input type="file" class="form-control" name="csv_file" accept=".csv" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Upload CSV</button>
+        </form>
+
+        <div class="mt-4">
+            <div class="mb-3">
+                <label for="store_id" class="form-label">Enter Rapaprel Store ID:</label>
+                <input type="text" class="form-control" name="store_id" id="store_id" value="1" required>
+            </div>
+
+            <button id="triggerInventorySyncBtn" class="btn btn-success">Trigger Inventory Sync</button>
+        </div>
+
+        <div class="loading mt-4" style="display:none;">Processing... Please wait.</div>
+        <div class="status mt-2" id="taskStatus"></div>
+    </div>
+
+    <!-- Bootstrap JS (optional, for components like modals or tooltips) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
+    <script>
+        $(document).ready(function () {
+            $('#uploadForm').on('submit', function (e) {
+                e.preventDefault();  // Prevent the form from submitting normally
+
+                // Show loading message
+                $('.loading').show();
+                $('#taskStatus').html('');  // Clear previous status
+
+                // Create FormData object to send the file
+                var formData = new FormData(this);
+
+                // Trigger the task by sending the file and store_id
+                $.ajax({
+                    url: "{% url 'trigger_inventory_sync' %}",  // URL to trigger the task
+                    type: "POST",
+                    data: formData,
+                    processData: false,  // Don't process the data
+                    contentType: false,  // Don't set content type
+                    success: function (response) {
+                        if (response.task_id) {
+                            // Start polling to check the status of the task every 1 minute
+                            pollTaskStatus(response.task_id);
+                        } else {
+                            $('.loading').hide();
+                            $('#taskStatus').html('Error: Task ID not returned.').addClass('failed');
+                        }
+                    },
+                    error: function () {
+                        $('.loading').hide();
+                        $('#taskStatus').html('An error occurred while uploading the file.').addClass('failed');
+                    }
+                });
+            });
+
+            // Polling function to check the task status
+            function pollTaskStatus(taskId) {
+                setInterval(function () {
+                    $.get("{% url 'check_task_status' 'task_id' %}".replace('task_id', taskId), function (data) {
+                        if (data.status === 'Pending...') {
+                            $('#taskStatus').html('Task is still being processed...').removeClass('completed failed');
+                        } else if (data.status.status === 'success') {
+                            $('.loading').hide();
+                            $('#taskStatus').html('Task completed successfully! ' + data.status.products_updated + ' products updated.').addClass('completed');
+                        } else if (data.status.status === 'failure') {
+                            $('.loading').hide();
+                            $('#taskStatus').html('Task failed: ' + data.status.error).addClass('failed');
+                        }
+                    });
+                }, 60000); // Poll every 1 minute (60000ms)
+            }
+
+            // Trigger Inventory Sync when the button is clicked
+            $('#triggerInventorySyncBtn').on('click', function () {
+                // Show loading message
+                $('.loading').show();
+                $('#taskStatus').html('');  // Clear previous status
+
+                // Get store_id value from the input field
+                var storeId = $('#store_id').val();
+
+                // Trigger the inventory sync task
+                $.ajax({
+                    url: "{% url 'trigger_inventory_sync' %}",  // URL to trigger the task
+                    type: "POST",
+                    data: { store_id: storeId },  // Send the store_id with the request
+                    success: function (response) {
+                        if (response.task_id) {
+                            // Start polling to check the status of the task every 1 minute
+                            pollTaskStatus(response.task_id);
+                        } else {
+                            $('.loading').hide();
+                            $('#taskStatus').html('Error: Task ID not returned.').addClass('failed');
+                        }
+                    },
+                    error: function () {
+                        $('.loading').hide();
+                        $('#taskStatus').html('An error occurred while triggering inventory sync.').addClass('failed');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

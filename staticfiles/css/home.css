@@ -1,0 +1,646 @@
+
+    /* General Container Margin for full page */
+    .content-container {
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 5rem;
+        padding-right: 5rem;
+        max-width: 100%; /* You can control the max width if needed */
+      }
+
+      #bannerdiv{
+         padding: 0px;
+        }
+        
+      
+      h1{
+        font-size: 3.5rem;
+      }
+      
+          /* Hero Section Styling */
+          .hero-section img {
+            width: 100%;
+            height: 500px;
+            object-fit: inherit;
+            border-radius: 15px;
+          }
+      
+          .hero-section .carousel-caption {
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: center;
+          }
+      
+          /* Carousel Styling */
+          .carousel-item img {
+            width: 100%;
+            height: 300px;
+            object-fit: inherit;
+            border-radius: 15px;
+          }
+      
+          /* Category and Brand Carousel Styling */
+          .category-carousel, .brand-carousel {
+            display: flex;
+            justify-content: center;
+             gap: 35px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+          }
+      
+          .category-image, .brand-image {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            
+          }
+      
+          .carousel-control-next, .carousel-control-prev {
+            top: -40px; /* Place arrows above the carousel */
+             margin-right: 15px;
+            
+          }
+          .carousel-control-prev i, .carousel-control-next i {
+        color: black; /* Ensure the chevron icons are black */
+      }
+          .banner-arrow  i {
+            color: white ;
+          }
+          
+          .banner-arrow {
+             top: 0px !important;
+      
+          }
+      
+          /* Store Card Styling */
+          .card-img-top {
+            height: 200px;
+            object-fit: cover;
+          }
+      
+          .store-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+      
+          
+          /* Hide cards initially after the first 4 */
+      .store-card.d-none {
+        display: none !important;
+      }
+          
+      /* Navbar search bar styling */
+      #search-bar {
+        
+        width: 300px;  /* Extend the width */
+        /* border-radius: 25px;  Make the search bar rounded */
+        /* border: 1px solid #ddd;  Subtle border */
+        padding: 10px 20px;  /* Add some padding for a better look */
+        /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);   */
+        background-color: #f5f5f6;
+        /* transition: all 0.3s ease-in-out;  Smooth transition for focus effect */
+      }
+
+      
+      /* Change appearance on focus */
+      /* #search-bar:focus { */
+        /* outline: none;  Remove default outline */
+        /* border-color: #ff3d58;  Highlight border on focus (pinkish) */
+        /* box-shadow: 0 4px 10px rgba(255, 107, 129, 0.4);  */
+      /* } */
+      
+
+      .navbar{
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 5px;
+      }
+      /* Detect Location button inlined */
+      #location-form {
+       
+        display: flex;
+        align-items: center;
+      }
+    
+
+      #location-icon-desktop i {
+        font-size: 1rem !important; /* Adjust the icon size (equivalent to small text) */
+        color: #555;         /* Adjust the icon color */
+    }
+
+
+
+
+    #location-icon-mobile i {
+
+      font-size: 1rem !important; /* Adjust the icon size (equivalent to small text) */
+      color: #555;         /* Adjust the icon color */
+  }
+      #location-form #detect-location-btn {
+        margin-left: 10px;
+      }
+          
+          /* new */
+      /* #location-input-desktop {
+        width: 400px !important;
+         border-top-left-radius: 0;
+        border-top-right-radius: 20px;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 20px;
+        }
+       .location{
+         border-top-left-radius: 20px;
+        border-top-right-radius: 0;
+        border-bottom-left-radius: 20px;
+         border-bottom-right-radius: 0;
+       } */
+       /* #search-form {
+        display: none !important;
+    } */
+      
+      /* Font icon size and color change on hover */
+      .navbar .bi {
+        font-size: 20px !important; /* Increase icon size */
+        color: grey; /* Default color */
+        transition: color 0.3s ease-in-out;
+      }
+      
+      .navbar .bi:hover {
+        color: #dc3545; /* Color on hover */
+      }
+          
+          /* Search icon inside the input field */
+      /* .position-relative {
+        position: relative;
+      } */
+      
+      .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #ccc;
+      }
+      
+      #search-bar {
+        padding-right: 40px;  /* Make space for the icon */
+      }
+      
+          /* Media Queries for smaller devices */
+          @media (max-width: 768px) {
+            .content-container {
+              margin-left: 1rem;
+              margin-right: 1rem;
+            }
+          }
+      
+          
+          /* Default h3 and h5 font sizes */
+      h3 {
+        font-size: 1.75rem; /* Adjust this to your preferred default size */
+      }
+      
+      h5 {
+        font-size: 1.25rem; /* Adjust this to your preferred default size */
+      }
+      
+      /* Media query for mobile devices (screens smaller than 768px) */
+      @media (max-width: 768px) {
+        h3 {
+          font-size: 1.25rem; /* Smaller h3 for mobile devices */
+        }
+      
+        h5 {
+          font-size: 1rem; /* Smaller h5 for mobile devices */
+        }
+      }
+      
+      /* Media query for extra small devices (screens smaller than 576px) */
+      @media (max-width: 576px) {
+        
+        h1 {
+          font-size: 1.25rem;
+        }
+        p{
+          font-size: 0.75rem;
+        }
+        .btn {
+             font-size: x-small !important;
+        }
+        h3 {
+          font-size: 1.1rem; /* Even smaller h3 for extra small screens */
+        }
+      
+        h5 {
+          font-size: 1rem; /* Even smaller h5 for extra small screens */
+        }
+      }
+      
+          
+          
+      /* General Styling Adjustments for smaller screens */
+      @media (max-width: 1200px) {
+        .content-container {
+          padding-left: 3rem;
+          padding-right: 3rem;
+        }
+        .navbar{
+          width: 100%;
+        }
+      }
+      
+      @media (max-width: 992px) {
+        .content-container {
+          margin-left: 0rem !important;
+        margin-right: 0rem !important;
+          padding-left: 1rem !important;
+          padding-right: 1rem !important;
+        }
+        .hero-section{
+          margin-top: 9rem !important;
+        }
+        .navbar{
+          width: 100%;
+        }
+        
+        /* Hero Section Adjustments */
+        .hero-section img {
+          height: 400px; /* Shrink hero banner */
+        }
+      
+        /* Adjust carousel items for mid-sized screens */
+        .carousel-item img {
+          height: 250px;
+        }
+      }
+      
+      @media (max-width: 768px) {
+        /* Adjust the navbar */
+        .navbar .d-flex {
+          display: none; /* Hide the icons (heart, bag, profile) */
+        }
+        .navbar{
+          width: 100%;
+        }
+      
+        #search-bar {
+        padding-right: 40px; 
+        width: 100% !important;/* Make space for the icon */
+      }
+        /* Keep logo and location form next to each other */
+        .navbar .navbar-brand,
+        #location-form {
+          display: flex;
+        }
+      
+        /* Hero Banner Adjustments */
+        .hero-section img {
+          height: 300px; /* Further shrink the hero banner height */
+        }
+      
+        /* Categories and Brands Carousel Adjustments */
+        .category-carousel, .brand-carousel {
+          
+          justify-content: normal;
+        }
+      
+        /* Shrink category and brand image sizes for smaller screens */
+        .category-image, .brand-image {
+          width: 90px;
+          height: 90px;
+        }
+      
+        /* Shrink banner carousel */
+        .carousel-item img {
+          height: 200px; /* Shrink banner carousel under brands */
+        }
+      
+        /* Store Cards: Display one under one */
+        .store-card {
+          width: 100%;
+          margin-bottom: 20px;
+        }
+      }
+      
+      @media (max-width: 576px) {
+        /* Further adjust for extra small screens */
+        .navbar {
+          flex-direction: row;
+          width: 100%;
+        }
+      
+        /* Further adjustments for hero section */
+        .hero-section img {
+          height: 200px; /* Shrink hero banner even more */
+        }
+        
+        .hero-section .carousel-caption {
+          top: 40% !important;
+          
+        }
+        .hero-section {
+          margin-top: 11rem !important;
+        }
+        
+        .carousel-control-prev, .carousel-control-next {
+          font-size: 1rem;
+        }
+        
+        /* Shrink the category and brand images more for small screens */
+        .category-image, .brand-image {
+          width: 70px;
+          height: 70px;
+        }
+      
+        /* Store Cards: Stack stores one below another */
+        .store-card {
+          width: 100%;
+        }
+      }
+          
+          
+      /* Mobile Header (Initially hidden) */
+      #mobile-header {
+        display: none; /* Hidden by default */
+        width: 100%;
+        background-color: #fff;
+        z-index: 1000;
+        position: fixed;
+        top: 0;
+        left: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional shadow */
+      }
+      
+      /* Align logo, location button, and search bar */
+      #mobile-header .navbar-brand {
+        margin-right: 10px;
+      }
+      
+      #search-bar-mobile {
+        font-size: 0.75rem;
+        width: 100%;
+        /* border-radius: 25px; */
+        padding-right: 40px; /* Space for the search icon */
+      }
+      
+      /* #search-bar-mobile:focus {
+        outline: none;
+        border-color: #ff3d58;
+        box-shadow: 0 4px 10px rgba(255, 107, 129, 0.4);
+      } */
+      
+      /* Search icon inside the input field */
+      .position-relative {
+        position: relative;
+      }
+      
+      .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #ccc;
+      }
+      
+      #detect-location-btn {
+        font-size: 0.875rem; /* Smaller font size for mobile */
+      }
+      
+      /* Media query for mobile to show the mobile header */
+      @media (max-width: 768px) {
+         .desktop-nav {
+          display: none;
+        }
+        .mobile-nav {
+          display: flex !important;
+         /* Show the mobile header on small devices */
+        }
+      #location-input, #location-select {
+                font-size: 0.75rem;
+      
+        width: 10rem; /* Ensure the input and select don't take up too much space */
+        margin-right: 10px; /* Add spacing between the elements */
+      }
+      
+      #location-select {
+        width: auto; /* Adjust the width of the select box */
+      }
+      
+      #detect-location-btn {
+        
+        display: inline-block; /* Keep the button inline with other elements */
+      }
+        
+        .navbar .bi {
+          font-size: 15px !important;
+        }
+        /* Hide the desktop header on mobile devices */
+       
+      }
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      /* Styling for the category carousel */
+      .category-carousel  .brand-carousel {
+        display: flex;
+        
+       
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        scrollbar-width: none; /* Hide scrollbar */
+        padding-top: 10px; /* Add 10px top padding */
+      }
+      
+      .category-carousel::-webkit-scrollbar,
+      .brand-carousel::-webkit-scrollbar 
+      {
+        display: none; /* Hide scrollbar on Webkit browsers */
+      }
+      
+      
+      
+      /* Arrows styling for the category section */
+      .carousel-control-prev, .carousel-control-next {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: black; /* Make the arrows black */
+        display: flex;
+        align-items: center; /* Vertically center the buttons */
+      }
+      
+      
+      
+      /* Optional: Styling for no text selection during drag */
+      .category-carousel .brand-carousel{
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+      
+      
+      .d-flex {
+        position: relative;
+        margin-top: 1.5rem;
+      }
+      
+      
+      /* Store Card Styling */
+      .card-img-top {
+        height: 200px;  /* Ensures all images have a uniform height */
+        object-fit: cover;
+      }
+      
+      .store-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      /* Footer Styling */
+      footer {
+        background-color: #f8f9fa;
+        padding: 60px 0;
+        padding-bottom: 0px;
+      }
+      
+      footer h5 {
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        color: #333;  /* Lighter heading color */
+        font-weight: 500;  /* Reduced font weight */
+      }
+      
+      /* Footer navigation links aligned to left */
+      footer ul {
+        padding-left: 0;
+        list-style: none;
+        text-align: left;  /* Align list items to the left */
+      }
+      
+      footer ul li {
+        margin-bottom: 0.75rem;
+      }
+      
+      footer ul li a {
+        text-decoration: none;
+        color: #777;
+        font-size: 0.9rem;
+      }
+      
+      footer ul li a:hover {
+        text-decoration: underline;
+        color: black;
+      }
+      
+      /* Newsletter Input Field */
+      footer .input-group {
+        max-width: 300px;
+        margin-top: 15px;
+      }
+      
+      footer .input-group input {
+        border-radius: 0.25rem;
+        border-color: #ccc;
+      }
+      
+      footer .input-group button {
+        border-radius: 0.25rem;
+        background-color: #ff3d58;
+        color: white;
+        border: none;
+      }
+      
+      footer .input-group button:hover {
+        background-color: #ff4d6d;
+      }
+      
+      /* Social Media Icons */
+      footer .bi {
+        color: #777;
+        margin-right: 15px;
+        transition: color 0.3s ease-in-out;
+      }
+      
+      footer .bi:hover {
+        color: black;
+      }
+      
+      /* Thin horizontal line between upper footer and copyright */
+      footer .divider {
+        height: 1px;
+        background-color: #ddd;  /* Thin grey line */
+        margin: 20px 0;
+      }
+      
+      /* Footer Copyright */
+      footer p {
+        margin-bottom: 0;
+        color: #777;
+      }
+      
+      
+      
+      
+      /* Bottom Navigation Bar (Hidden by default) */
+      #bottom-nav {
+        display: none;  /* Hidden on larger screens */
+        box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #fff;
+        z-index: 1000;
+      }
+      
+      /* Show bottom navigation bar only on mobile devices (screens smaller than 768px) */
+      @media (max-width: 768px) {
+        #bottom-nav {
+          display: flex;
+          justify-content: space-around; /* Distribute items evenly */
+          padding: 5px 0;
+        }
+      
+        /* #storeCardsContainer {
+          margin-top: 12rem !important;
+        } */
+       
+        /* Hide desktop navbar for mobile */
+        
+      }
+      
+      /* Styling for the icons inside the bottom navigation */
+      #bottom-nav .nav-item {
+        color: #555;
+        text-decoration: none;
+        font-size: 0.75rem;
+      }
+      
+      #bottom-nav .nav-item i {
+        font-size: 1.5rem;
+      }
+      
+      
+      
+      
+          

@@ -1,0 +1,273 @@
+{% extends 'dashboard/custom_admin/base_dash.html' %}
+
+{% block content %}
+<style>
+    /* Custom styles for inline form */
+    .inline-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .inline-form .form-control {
+        width: auto;
+        max-width: 150px;
+    }
+
+    .inline-form .btn {
+        margin-left: 10px;
+    }
+
+    /* Styling for image gallery preview */
+    .image-gallery img {
+        max-width: 100px;
+        margin: 5px;
+    }
+</style>
+
+<div class="container pt-5">
+    <h2 class="mb-4 text-center">Manage Products</h2>
+    <!-- Button to toggle inline form for adding a new product -->
+    <div class="d-flex justify-content-end mb-3">
+        <!-- <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addProductForm" aria-expanded="false" aria-controls="addProductForm">
+            Add Product
+        </button> -->
+    </div>
+
+    <!-- Inline form for adding a product -->
+    <div class="collapse mb-3" id="addProductForm">
+        <form method="POST" enctype="multipart/form-data" id="addProductInlineForm" class="inline-form">
+            {% csrf_token %}
+            
+            <input type="text" name="name" id="name" class="form-control" placeholder="Name" required>
+            <input type="text" name="sku" id="sku" class="form-control" placeholder="SKU" required>
+            <input type="number" name="mrp" id="mrp" class="form-control" placeholder="MRP" required>
+            <input type="number" name="sale_price" id="sale_price" class="form-control" placeholder="Sale Price" required>
+            <input type="number" name="inventory" id="inventory" class="form-control" placeholder="Inventory" required>
+
+            <!-- Input for Primary Image -->
+            <input type="file" name="primary_image" class="form-control" accept="image/*" onchange="previewPrimaryImage(event)" required>
+            <img id="primaryImagePreview" src="#" alt="Primary Image Preview" style="display:none; max-width: 150px; margin-top: 10px;">
+
+            <!-- Input for Gallery Images -->
+            <input type="file" id="gallery" name="gallery_images" class="form-control" accept="image/*" multiple onchange="previewGalleryImages(event)">
+            <div id="galleryPreview" class="image-gallery mt-2"></div>
+
+              <!-- Attributes Section -->
+              <div class="mb-3">
+                <label for="attributes">Select Attributes</label>
+                            <select name="attributes" id="attributes" class="form-select" multiple required>
+                                {% for value in attribute_values %}
+                                    <option value="{{ value.id }}">{{ value }}</option>
+                                {% endfor %}
+                            </select>
+            </div>
+
+            <button type="submit" class="btn btn-success">Add Product</button>
+        </form>
+    </div>
+
+    <!-- Product Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Sr. No.</th>
+                    <th>Name</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Brand</th>
+                    <th>MRP</th>
+                    <th>Sale Price</th>
+                    <th>Inventory</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.sku }}</td>
+                    <td>{{ product.category.name }}</td>
+                    <td>{{ product.brand.name }}</td>
+                    <td>{{ product.mrp }}</td>
+                    <td>{{ product.sale_price }}</td>
+                    <td>{{ product.inventory }}</td>
+                    <td>
+                        <!-- Directly open the accordion -->
+                        <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#productAccordion{{ product.id }}" aria-expanded="true" aria-controls="productAccordion{{ product.id }}">
+                            Edit
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="9">
+                        <!-- Accordion for editing the product details -->
+                        <div class="accordion-collapse collapse" id="productAccordion{{ product.id }}">
+                            <div class="accordion-body">
+                                <form method="POST" enctype="multipart/form-data" id="productForm{{ product.id }}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+
+                                    <!-- Primary Image Section -->
+                                    <div class="mb-3">
+                                        <label for="primary_image">Primary Image</label>
+                                        <input type="file" name="primary_image" class="form-control" accept="image/*" onchange="previewPrimaryImage(event)">
+                                        <img id="primaryImagePreview{{ product.id }}" src="{{ product.primary_image.url }}" alt="Primary Image" style="max-width: 150px; margin-top: 10px;">
+                                    </div>
+
+                                    <!-- Gallery Images Section -->
+                                    <div class="mb-3">
+                                        <label for="gallery_images">Gallery Images</label>
+<input type="file" id="gallery" name="gallery_images" class="form-control" accept="image/*" multiple onchange="previewGalleryImages(event)">
+                                                    <div id="galleryPreview{{ product.id }}" class="image-gallery">
+                                            {% for image in product.gallery.all %}
+                                                <img src="{{ image.url }}" alt="Gallery Image">
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                     <!-- Attributes Section -->
+                                     <div class="mb-3">
+                                        <label for="attributes">Select Attributes</label>
+                                        <select name="attributes" id="attributes" class="form-select" multiple required>
+                                            {% for value in attribute_values %}
+                                                <option value="{{ value.id }}">{{ value }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="name">Name</label>
+                                            <input type="text" name="name" class="form-control" value="{{ product.name }}" required>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="sku">SKU</label>
+                                            <input type="text" name="sku" class="form-control" value="{{ product.sku }}" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="mrp">MRP</label>
+                                            <input type="number" name="mrp" class="form-control" value="{{ product.mrp }}" required>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="sale_price">Sale Price</label>
+                                            <input type="number" name="sale_price" class="form-control" value="{{ product.sale_price }}" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="inventory">Inventory</label>
+                                            <input type="number" name="inventory" class="form-control" value="{{ product.inventory }}" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="description">Description</label>
+                                        <textarea name="description" class="form-control">{{ product.description }}</textarea>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="category">Category</label>
+                                            <select name="category" class="form-select" required>
+                                                <option value="{{ product.category.id }}" selected>{{ product.category.name }}</option>
+                                                {% for category in categories %}
+                                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="brand">Brand</label>
+                                            <select name="brand" class="form-select" required>
+                                                <option value="{{ product.brand.id }}" selected>{{ product.brand.name }}</option>
+                                                {% for brand in brands %}
+                                                <option value="{{ brand.id }}">{{ brand.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <button type="submit" class="btn btn-success">Save changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Bootstrap JS and Popper.js (required for Bootstrap 5 components like collapse and accordion) -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+<script>
+    // Real-time preview for primary image
+    function previewPrimaryImage(event) {
+        var reader = new FileReader();
+        reader.onload = function(){
+            var output = document.getElementById('primaryImagePreview');
+            output.style.display = 'inline-block';
+            output.src = reader.result;
+        }
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    
+
+    // Real-time image preview for gallery
+    function previewGalleryImages(event) {
+        var galleryPreview = document.getElementById('galleryPreview');
+        galleryPreview.innerHTML = ''; // Clear any previous images
+
+        // Loop through all selected files
+        for (var i = 0; i < event.target.files.length; i++) {
+            var reader = new FileReader();
+
+            // Set up the file reader to load each image
+            reader.onload = function (event) {
+                var img = document.createElement('img');
+                img.src = event.target.result; // Set the image source to the result from the reader
+                img.className = 'col-md-3 img-thumbnail me-2'; // Add margin for spacing and set a thumbnail style
+                img.style.width = '100px'; // Fixed width for the thumbnails
+
+                // Append the image to the gallery preview container
+                galleryPreview.appendChild(img);
+            };
+
+            // Read the image as a data URL
+            reader.readAsDataURL(event.target.files[i]);
+        }
+    }
+
+    document.querySelectorAll('.accordion-collapse').forEach(function (collapse) {
+        collapse.addEventListener('hidden.bs.collapse', function () {
+            // Find the form within this collapsed accordion item
+            const form = collapse.querySelector('form');
+            if (form) {
+                form.reset(); // Reset form fields
+            }
+
+            // Clear any existing gallery image previews
+            const galleryPreview = collapse.querySelector('.image-gallery');
+            if (galleryPreview) {
+                galleryPreview.innerHTML = ''; // Clear gallery preview
+            }
+        });
+    });
+</script>
+
+{% endblock %}

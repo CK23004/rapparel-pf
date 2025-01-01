@@ -1,0 +1,84 @@
+{% extends 'base_index.html' %}
+
+{% block title %}Return & Refunds Policy - Rapparel{% endblock %}
+
+{% block extra_css %}
+{% load static %}
+<style>
+     
+
+        h3 {
+            color: #2c3e50;
+        }
+        p, li {
+            text-align: justify;
+            line-height: 1.6;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: red;
+        }
+        .mobile-nav {
+    position: sticky;
+    top: 0;  /* Keep the navbar at the top */
+    z-index: 1030;  /* Ensure the navbar is above other content */
+    background-color: white;  /* Optional: Add background color to prevent overlap */
+}
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<header class="text-center py-1">
+    <h1>Return and Refunds Policy</h1>
+</header>
+
+
+<div class="container mt-3">
+    
+<h3 class="section-title">Conditions for Return</h3>
+<p>You may return a product from an order under the following conditions:</p>
+<ul>
+    <li>If the wrong item was delivered, i.e., different from what you ordered, or</li>
+    <li>If the item was substantially damaged or deteriorated in quality at the time of delivery.</li>
+</ul>
+<p>You agree to provide all necessary proof, including but not limited to images of the product with issues.</p>
+<h3 class="section-title">Initiating a Return or Exchange</h3>
+<p>You must inspect the products upon delivery and initiate an exchange or return with the required proof via the Platform. You may also contact our customer care to initiate an exchange or return.</p>
+<p class="highlight">IT IS CLARIFIED THAT EXCHANGE OR RETURNS WILL NOT BE ACCEPTED IF THE PRODUCT DOES NOT HAVE THE RAPPAREL “SEAL TAG” OR IF THE PRODUCT IS USED IN PART OR FULL.</p>
+<h3 class="section-title">Eligibility for Return or Exchange</h3>
+<p>You may request an exchange or return for products purchased from us, provided:</p>
+<ul>
+    <li>The products have the Rapparel seal tag.</li>
+    <li>The products are unused and in their original condition.</li>
+    <li>The request is made within 24 hours of delivery.</li>
+</ul>
+<p>Requests for exchanges or returns will not be accepted after 24 hours from the time of delivery.</p>
+<!-- <h3 class="section-title">Digital Goods</h3>
+<p>For digital goods (including gift cards/vouchers), no returns or refunds apply. If you encounter any issues, such as validity, usage restrictions, or redemption-related concerns, you are required to contact the relevant issuer/seller. For such issues, please refer to the issuer/seller's terms and conditions, in addition to these Terms.</p> -->
+<h3 class="section-title">Refund Processing</h3>
+<!-- <p>All refunds for permitted returns and cancellations will be processed within 7 working days from the approval of the return/cancellation, subject to satisfactory checks.</p> -->
+<p>If refund is approved, your refund will be processed, and a credit will automatically be applied to your original method of payment within 7-10 business days.</p>
+<p>Unless otherwise stated or mutually agreed upon between Rapparel and the customer:</p>
+<ul>
+    <li>Refunds for payments made via electronic methods (such as debit card, credit card, net banking, UPI, etc.) will be processed in the same manner as the original payment or provided in the form of credit/cashback/coupons/promotional codes.</li>
+    <li>Refunds for cash on delivery purchases will be provided in the form of promotional codes, which will expire 30 days from the date of issuance.</li>
+    <li>Promotional codes issued for refunds will expire 7 days from their issuance unless otherwise stated.</li>
+</ul>
+<p class="highlight">Refunds cannot be transferred back to any other payment method once the credit/cashback/coupon/promotional code is issued.</p>
+<h3 class="section-title">Currency for Refunds</h3>
+<p>All refunds will be made in Indian Rupees only.</p>
+
+</div>
+
+
+
+{% endblock %}

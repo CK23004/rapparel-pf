@@ -1,0 +1,132 @@
+{% extends 'base_index.html' %}
+
+{% block title %}
+Rapparel | Fashion Delivered in 90 Minutes
+{% endblock %}
+
+
+{% block content %}
+  <!-- Hero Section -->
+  <div class="hero-section position-relative content-container mt-4">
+    {% if primary_banner %}
+      <img src="{{ primary_banner.image.url }}" alt="Banner" class="img-fluid">
+      
+
+      <!-- <div class="carousel-caption">
+        {% if primary_banner.title %}
+        <h1>{{ primary_banner.title }}</h1>
+        {% endif %}
+        {% if primary_banner.tagline %}
+        <p>{{ primary_banner.tagline }}</p>
+        {% endif %}
+        {% if primary_banner.button_link %} 
+        {% if primary_banner.button_text %}
+        <a href="{{ primary_banner.button_link }}" class="btn btn-danger">{{ primary_banner.button_text }}</a>
+        {% endif %}{% endif %}
+      </div> -->
+
+    {% else %}
+      <img src="https://via.placeholder.com/1200x500" alt="Banner" class="img-fluid">
+    {% endif %}
+  </div>
+
+  <!-- Categories Section -->
+
+  
+  <div class="container my-5 content-container">
+    <div class="d-flex justify-content-between align-items-center">
+      <h3 class="text-left">Choose what you want to wear</h3>
+    </div>
+    <div id="categoryCarousel" class="category-carousel mt-4">
+
+      <!-- Category items -->
+
+       {% for category in categories %}
+      <div class="category-item text-center"> 
+        <a href="{% url 'category_stores' category.slug %}" 
+           class="text-decoration-none text-dark" 
+           id="category-link-{{ category.id }}" 
+           data-category-slug="{{ category.slug }}">
+          <img src="{{ category.logo.url }}" class="rounded-circle category-image" alt="{{ category.name }}">
+          <p>{{ category.name }}</p>
+        </a>
+      </div>
+    {% endfor %}
+    
+    </div>
+  </div>
+
+  <!-- Brands Section -->
+  <div class="container my-5 content-container">
+    <div class="d-flex justify-content-between align-items-center">
+      <h3 class="text-left">Brands</h3>
+    </div>
+    <div id="brandCarousel" class="brand-carousel mt-4">
+      <!-- Brand items -->
+      {% for brand in brands %}
+  <div class="brand-item text-center">
+    <a href="{% url 'brand_stores' brand.slug %}" 
+    class="text-decoration-none text-dark" 
+    id="brand-link-{{ brand.id }}" 
+    data-brand-slug="{{ brand.slug }}">      
+    <img src="{{ brand.logo.url }}" class="rounded-circle brand-image" alt="{{ brand.name }}">
+      <p>{{ brand.name }}</p>
+    </a>
+  </div>
+{% endfor %}
+    </div>
+  </div>
+
+  <!-- Yellow Carousel Section -->
+  <div id="yellowCarousel" class="carousel slide content-container" data-ride="carousel" data-interval="3000">
+    <div class="carousel-inner">
+      {% if secondary_banners %}
+      {% for banner in secondary_banners %}
+        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+          <a href="{{ banner.link }}">
+            <img src="{{ banner.image.url }}" class="d-block w-100" alt="{{ banner.title }}">
+        </a>
+        </div>
+        
+      {% endfor %}
+      {% else %}
+      <img src="https://via.placeholder.com/258x200" alt="Banner" class="img-fluid">
+    {% endif %}
+    </div>
+    <a class="carousel-control-prev banner-arrow" href="#yellowCarousel" role="button" data-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="sr-only">Previous</span>
+    </a>
+    <a class="carousel-control-next banner-arrow" href="#yellowCarousel" role="button" data-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="sr-only">Next</span>
+    </a>
+  </div>
+
+  <!-- Stores Near You Section -->
+  <div class="container my-5 content-container">
+    <h3 class="text-left">Stores Near You</h3>
+
+    <!-- Store Cards -->
+    <div id="storeCardsContainer" class="row">
+      {% for store, distance, estimated_arrival_time_minutes  in nearby_stores %}
+      <div class="col-sm-6 col-lg-3 store-card {% if forloop.counter > 8 %}d-none{% endif %}">
+          <a href="{% url 'store_detail' store.slug %}" class="text-decoration-none text-dark">
+              <div class="card mb-4">
+                  <img src="{{ store.display_image.url }}" class="card-img-top" alt="{{ store.name }}">
+                  <div class="card-body store-info">
+                      <h5 class="card-title">{{ store.name }}</h5>
+                      <p class="card-text text-right">{{ estimated_arrival_time_minutes }} min</p>
+                  </div>
+              </div>
+          </a>
+      </div>
+  {% endfor %}
+    </div>
+
+    <!-- View More button -->
+<div class="text-center mt-4">
+  <button id="viewMoreBtn" class="btn btn-danger">View More</button>
+</div>
+  </div>
+{% endblock %}

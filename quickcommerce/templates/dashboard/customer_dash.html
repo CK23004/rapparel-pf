@@ -1,0 +1,254 @@
+{% extends 'base_index.html' %}
+
+{% block title %}My Account{% endblock %}
+
+{% block content %}
+<!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> -->
+
+<style>
+   
+
+.sidebar {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    min-height: 100vh;
+}
+
+/* .navbar {
+    padding: 15px;
+} */
+
+.card {
+    border-radius: 10px;
+}
+
+.card-title {
+    font-weight: 600;
+}
+
+.main-content {
+    background-color: #fff;
+    min-height: 100vh;
+    padding: 30px;
+    border-radius: 10px;
+}
+
+.nav-link-custom {
+    background-color: #fff;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 10px 20px;
+    font-weight: normal;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.nav-link-custom:hover {
+    color: #51185A;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+
+}
+
+.nav-link-custom:active {
+    color: #51185A;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+
+}
+
+.nav-link-custom:focus {
+    outline: none;
+}
+
+.message-container {
+    width: 100%;
+    max-width: 50rem; /* Same width as the form for consistency */
+    margin-bottom: 20px; /* Adds some space between the messages and the form */
+}
+
+
+@media (max-width: 768px) {
+    .container-fluid {
+
+margin-top: 19rem !important;
+}
+}
+/* General styling for all screens */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #dee2e6;
+}
+
+/* For larger screens (PC) */
+@media (min-width: 1024px) {
+    .tableres {
+        overflow-x: auto;
+    }
+
+    .table th, .table td {
+        font-size: 16px;
+    }
+}
+
+/* For tablet screens (768px to 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
+    .table th, .table td {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+
+/* For mobile screens (less than 768px) */
+@media (max-width: 767px) {
+    .tableres {
+        overflow-x: auto;
+        display: block;
+    }
+
+    .table {
+        width: 100%;
+        display: block;
+    }
+
+    /* Make the table scrollable horizontally */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table th, .table td {
+        display: block;
+        text-align: right;
+        padding: 10px;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    .table td::before {
+        content: attr(data-label); /* Add labels to the cells */
+        float: left;
+        font-weight: bold;
+        text-transform: capitalize;
+    }
+
+    .table th {
+        display: none; /* Hide table headers */
+    }
+
+    /* Styling for textarea inside form for mobile */
+    .return-request-form textarea {
+        width: 100%;
+        font-size: 14px;
+    }
+
+    /* Align buttons for mobile */
+    .return-request-form button {
+        width: 100%;
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 576px) {
+   #rowid{
+    margin-top: -11rem !important;
+   }
+   #proddetail{
+    padding: 0px !important;
+     width: 100%;
+     height: 100%;
+   }
+  
+    
+}
+
+@media (max-width: 1200px) {}
+@media (max-width: 992px) {}
+
+
+</style>
+<div class="container-fluid">
+    <div id="rowid" class="row">
+        <!-- Sidebar with nav links -->
+        <div class="col-md-3 col-lg-2 bg-light sidebar d-flex flex-column py-4 shadow-sm">
+           
+
+            <nav class="nav flex-column">
+                <a class="nav-link-custom mb-3" href="{% url 'customer_past_orders'%}">My Orders</a>
+                <a class="nav-link-custom mb-3" href="{% url 'customer_profile' %}">Profile Settings</a>
+                <a class="nav-link-custom mb-3" href="{% url 'customer_wishlist' %}">Wishlist</a>
+                <a class="nav-link-custom mb-3" href="{% url 'customer_saved_addresses' %}">Saved Addresses</a>
+                <a class="nav-link-custom mb-3" href="{% url 'customer_return_requests' %}">Returns</a>
+                <a class="nav-link-custom" href="{% url 'logout' %}">Logout</a>
+            </nav>
+
+            
+            
+        </div>
+
+        <!-- Main content area -->
+        <div id="proddetail" class="col-md-9 col-lg-10 py-4 px-5">
+            {% if messages %}
+        <div class="message-container">
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {% elif message.tags == 'info' %}
+                    <div class="alert alert-primary alert-dismissible fade show" role="alert">
+                {% elif message.tags == 'success' %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {% elif message.tags == 'warning' %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                {% else %}
+                    <div class="alert alert-secondary alert-dismissible fade show" role="alert">
+                {% endif %}
+                    {{ message }}
+                    <span type="button" class="bi bi-x-lg btn-close" data-bs-dismiss="alert" aria-label="Close"></span>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+            {% block account_content  %}
+            
+            {% endblock %}
+
+            <!-- <h3 class="mb-4">Welcome to your Dashboard</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Order Overview</h5>
+                            <p class="card-text">View and manage all your recent orders here.</p>
+                            <a href="#" class="btn btn-primary">View Orders</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Profile Settings</h5>
+                            <p class="card-text">Edit your personal information and account settings.</p>
+                            <a href="#" class="btn btn-primary">Edit Profile</a>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+{% endblock %}

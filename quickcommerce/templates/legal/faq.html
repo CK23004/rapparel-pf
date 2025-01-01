@@ -1,0 +1,76 @@
+{% extends 'base_index.html' %}
+
+{% block title %}FAQs - Rapparel{% endblock %}
+
+{% block extra_css %}
+{% load static %}
+<style>
+     
+
+        h3 {
+            color: #2c3e50;
+        }
+        p, li {
+            text-align: justify;
+            line-height: 1.6;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+<section class="faq-section py-1">
+    <div class="container">
+        <h1 class="text-center mb-4">Frequently Asked Questions</h1>
+        <div class="faq-item mb-4">
+            <h5><strong>How quickly will my order be delivered?</strong></h5>
+            <p>Rapparel aims to deliver orders within 90 minutes of purchase. However, delivery times may vary based on distance, location, and other factors.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>How does Rapparel ensure product authenticity?</strong></h5>
+            <p>We collaborate directly with verified brand stores to guarantee that all products are 100% authentic.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>Where does Rapparel deliver?</strong></h5>
+            <p>Currently, our services are available in Gurgaon, with plans to expand to additional cities soon.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>What is Rapparel’s return window?</strong></h5>
+            <p>Products can be returned within 24 hours of delivery. Please note that some items may be non-returnable due to brand-specific policies, which are detailed on the product page or at checkout.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>What happens if there’s a delay in delivery?</strong></h5>
+            <p>In the rare event of a delay, you can contact our support team for prompt assistance and resolution.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>Can I cancel my order after placing it?</strong></h5>
+            <p>Orders cannot be canceled once they have been placed.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>How does Rapparel handle refunds?</strong></h5>
+            <p>Refunds are processed within seven working days upon receiving approval for the returned product from the brand.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>How can I track my order?</strong></h5>
+            <p>Real-time tracking details are shared through the web app once your order is placed.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>Can I place multiple orders?</strong></h5>
+            <p>Yes, multiple orders can be placed, but each will be processed and delivered individually.</p>
+        </div>
+        <div class="faq-item mb-4">
+            <h5><strong>How can I give feedback about Rapparel?</strong></h5>
+            <p>Feedback is always welcome and can be shared via our contact number or email. Your input helps us enhance our services.</p>
+        </div>
+    </div>
+</section>
+
+
+{% endblock %}

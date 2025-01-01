@@ -1,0 +1,317 @@
+{% extends 'base_index.html' %}
+{% block title %}Store Page{% endblock %}  
+{% block extra_css %}
+
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/store.css' %}">
+  <style>
+   
+    /* Popup Sidebar for Filters on Mobile */
+    @media (max-width: 768px) {
+      .filter-sidebar {
+        display: none;
+      }
+      .main-container {
+        margin-top: 11rem !important;
+    }
+
+    .store-banner {
+        height: 150px;
+    }
+     /* Responsive adjustments */
+    /* Make Category Tabs Smaller */
+    .nav-tabs .nav-link {
+      font-size: 0.9rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .nav-tabs .nav-link.active {
+      background-color: #f50057;
+      color: white;
+      border: none;
+    }
+
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    .location{
+        margin-top: 0rem;
+    }
+    .location-eta {
+        margin-top: 1rem;
+    }
+    .location-eta select, .location-eta span {
+    font-size: 1rem;
+}
+
+/* Adjust product card for mobile view to fit 2 per row */
+.product-card {
+        width: 50%;
+        height: 200px;
+      }
+
+      .product-card img {
+        height: 100px; /* Adjust height of product image for mobile */
+      }
+
+      .product-card .card-body {
+        padding: 10px; /* Reduce padding to fit more content */
+      }
+
+      .product-card .price {
+        font-size: 0.75rem;
+      }
+
+      .card-title {
+        font-size: 0.75rem;
+      }
+
+      .product-card .btn {
+        display: none;
+        padding: 5px 10px;
+        font-size: 0.85rem;
+      }
+
+      
+      .product-card .wishlist-icon {
+        font-size: 1.2rem;
+      }
+
+
+
+    }
+
+    /* .filter-btn{
+
+    }
+     */
+
+   
+  </style>
+  {% endblock %}
+  {% block content %}
+
+
+<div class="container main-container mt-5" style="max-width: 1400px;">
+  <!-- Store Banner -->
+  <div class="store-banner">
+    <h1>Wynk Store</h1>
+  </div>
+
+  <!-- Location and ETA Section -->
+  <div class="location-eta">
+    <!-- Location Section -->
+    <div class="location d-flex align-items-center">
+        <i class="bi bi-geo-alt-fill mr-2" style="font-size: 1.5rem; color: #f50057;"></i>
+      <div id="location-info">
+        <!-- If location fetched from the server, display the location -->
+        <span id="current-location" class="d-none">Pune</span>
+
+        <!-- If no location is fetched, show a select box -->
+        <select id="location-select" class="form-control d-none">
+          <option value="" disabled selected>Select Location</option>
+          <option value="pune">Pune</option>
+          <option value="mumbai">Mumbai</option>
+          <option value="delhi">Delhi</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ETA Section -->
+    <div class="eta">
+      <span>ETA: <span id="eta-value">-- min</span></span>
+    </div>
+  </div>
+
+  <!-- Category Tabs -->
+  <ul class="nav nav-tabs" id="categoryTab" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" id="all-products-tab" data-toggle="tab" href="#all-products" role="tab" aria-controls="all-products" aria-selected="true">All Products</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="t-shirt-tab" data-toggle="tab" href="#t-shirt" role="tab" aria-controls="t-shirt" aria-selected="false">T-shirt</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="kurti-tab" data-toggle="tab" href="#kurti" role="tab" aria-controls="kurti" aria-selected="false">Kurti's</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="leggings-tab" data-toggle="tab" href="#leggings" role="tab" aria-controls="leggings" aria-selected="false">Leggings</a>
+    </li>
+
+  </ul>
+  <button class="btn btn-outline-secondary float-right d-block d-md-none mb-3" data-toggle="modal" data-target="#filterModal">
+    Filters
+  </button>
+
+
+  <!-- Filter Sidebar for Mobile Popup -->
+  <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="filterModalLabel">Filters</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Filters content -->
+          <div class="accordion" id="filterAccordion">
+            <div class="card">
+              <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                  <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                    Categories
+                  </button>
+                </h5>
+              </div>
+
+              <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#filterAccordion">
+                <div class="card-body">
+                  <input type="checkbox" id="filter1"> All Products<br>
+                  <input type="checkbox" id="filter2"> T-shirt<br>
+                  <input type="checkbox" id="filter3"> Kurti's<br>
+                  <input type="checkbox" id="filter4"> Leggings<br>
+                </div>
+              </div>
+            </div>
+
+            <!-- Price Filter -->
+            <div class="card">
+              <div class="card-header" id="headingTwo">
+                <h5 class="mb-0">
+                  <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    Price Range
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#filterAccordion">
+                <div class="card-body">
+                  <div class="price-range">
+                    <input type="range" min="0" max="500" value="250" id="priceRange">
+                  </div>
+                  <div class="price-boxes mt-3">
+                    <input type="text" id="minPrice" placeholder="$0">
+                    <input type="text" id="maxPrice" placeholder="$500">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary">Apply Filters</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products and Filters Sections will come here -->
+   <!-- Category and Filter Section -->
+  <div class="row mt-5">
+    <!-- Filter Sidebar -->
+    <div class="col-md-3 filter-sidebar">
+      <div class="accordion" id="filterAccordion">
+        <!-- Category Filter -->
+        <div class="card">
+          <div class="card-header" id="headingOne">
+            <h5 class="mb-0">
+              <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                Categories
+              </button>
+            </h5>
+          </div>
+
+          <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#filterAccordion">
+            <div class="card-body">
+              <input type="checkbox" id="filter1"> All Products<br>
+              <input type="checkbox" id="filter2"> T-shirt<br>
+              <input type="checkbox" id="filter3"> Kurti's<br>
+              <input type="checkbox" id="filter4"> Leggings<br>
+            </div>
+          </div>
+        </div>
+
+        <!-- Price Filter -->
+        <div class="card">
+          <div class="card-header" id="headingTwo">
+            <h5 class="mb-0">
+              <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                Price Range
+              </button>
+            </h5>
+          </div>
+          <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#filterAccordion">
+            <div class="card-body">
+              <div class="price-range">
+                <input type="range" min="0" max="500" value="250" id="priceRange">
+              </div>
+              <div class="price-boxes mt-3">
+                <input type="text" id="minPrice" placeholder="$0">
+                <input type="text" id="maxPrice" placeholder="$500">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products Section -->
+    <div class="col-md-9 tab-content" id="myTabContent">
+      <!-- All Products Tab -->
+      <div class="tab-pane fade show active" id="all-products" role="tabpanel" aria-labelledby="all-products-tab">
+        <div class="row">
+          <!-- Product Card -->
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card product-card">
+              <img src="https://via.placeholder.com/250x250" class="card-img-top" alt="Product Image">
+              <i class="bi bi-bag cart-icon"></i>
+
+              <i class="bi bi-heart wishlist-icon"></i>
+              <div class="card-body">
+                <h5 class="card-title">Elegant Cotton Kurti</h5>
+                <div class="price mb-2">$40.00</div>
+                <button class="btn btn-block">Add to cart</button>
+              </div>
+            </div>
+          </div>
+
+          
+          <!-- Add more product cards as needed -->
+        </div>
+      </div>
+
+      <!-- Example for T-shirt Products Tab -->
+      <div class="tab-pane fade" id="t-shirt" role="tabpanel" aria-labelledby="t-shirt-tab">
+        <div class="row">
+          <!-- T-shirt Product Card -->
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card product-card">
+              <img src="https://via.placeholder.com/250x250" class="card-img-top" alt="Product Image">
+              <i class="bi bi-bag cart-icon"></i>
+
+              <i class="bi bi-heart wishlist-icon"></i>
+              <div class="card-body">
+                <h5 class="card-title">Slim Fit T-shirt</h5>
+                <div class="price mb-2">$25.00</div>
+                <button class="btn btn-block">Add to cart</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add more product cards for T-shirt -->
+        </div>
+      </div>
+      
+      <!-- Add more product tabs (Kurti, Leggings, etc.) as necessary -->
+    </div>
+  </div>
+  
+</div>
+
+<!-- Ensure jQuery is loaded first -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static 'js/store.js' %}"></script>
+
+{% endblock %}

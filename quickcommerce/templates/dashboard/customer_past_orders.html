@@ -1,0 +1,232 @@
+{% extends 'dashboard/customer_dash.html' %}
+{% block title %}Past Orders{% endblock %}
+
+{% block account_content  %}
+<style>
+    .accordion-item {
+    margin-bottom: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.accordion-header .accordion-button {
+    background-color: white;
+    
+    padding: 10px 20px;
+    border: none;
+}
+.accordion-button {
+        font-size: 14px !important;
+    }
+
+.accordion-button:not(.collapsed) {
+    background-color: #dc3545;
+    color: white;
+}
+
+.accordion-body {
+    background-color: #ffffff;
+    padding: 20px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table-wrapper {
+    width: 100%; /* Ensure full width */
+    overflow-x: auto; /* Enable horizontal scrolling */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile */
+}
+
+.table {
+    white-space: nowrap; /* Prevent wrapping of table content */
+}
+
+.table thead th, 
+.table tbody td {
+    text-align: center;
+    vertical-align: middle; /* Align content vertically */
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.table-bordered td, .table-bordered th {
+    vertical-align: middle;
+}
+
+.return-request-form textarea {
+    resize: none;
+}
+
+.return-request-form button {
+    width: 100%;
+}
+
+
+
+.table-responsive {
+    overflow-x: auto; /* Allow horizontal scrolling */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile */
+}
+
+.table thead th {
+    background-color: #f8f9fa; /* Light background for headers */
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.table-bordered td, .table-bordered th {
+    white-space: nowrap; /* Prevent wrapping */
+    vertical-align: middle;
+}
+
+
+@media (max-width: 768px) {
+    .container-fluid {
+
+        margin-top: 19rem !important;
+    }
+    .accordion-button {
+        font-size: 14px !important;
+    }
+
+    .table {
+        font-size: 12px;
+        table-layout: auto; /* Default layout for proper alignment */
+        white-space: nowrap; 
+    } 
+
+    .table thead th {
+        display: table-cell; /* Ensure headers are visible on small screens */
+        font-size: 12px; /* Adjust font size for better readability */
+    }
+
+    .table tbody td {
+        display: table-cell; 
+        font-size: 12px; /* Adjust font size for table data */
+    }
+
+    #proddetail{
+        padding: 0px !important;
+        margin-top: 0rem !important;
+    }
+    .return-request-form button {
+        font-size: 12px;
+    }
+}
+
+</style>
+{% load custom_filters %}
+
+<div class="container mt-4">
+    <h3 class="mb-4">Your Past Orders</h3>
+    {% if orders %}
+<div class="accordion" id="ordersAccordion">
+    {% for order in orders %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="heading{{ order.id }}">
+            <button class="accordion-button btn-outline-secondary text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ order.id }}" aria-expanded="false" aria-controls="collapse{{ order.id }}">
+                <strong>Order Number:</strong> {{ order.order_no }}
+            </button>
+        </h2>
+        <div id="collapse{{ order.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ order.id }}" data-bs-parent="#ordersAccordion">
+            <div class="accordion-body">
+                <div class="order-summary">
+                    <p><strong>Order Total:</strong> ₹{{ order.total_amount }}</p>
+                    <p><strong>Placed At:</strong> {{ order.placed_at|date:"Y-m-d H:i" }}</p>
+                    <p><strong>Payment Status:</strong> {{ order.get_payment_status_display }}</p>
+                    <p><strong>Order Status:</strong> {{ order.get_order_status_display }}</p>
+                    <p><strong>Delivery Status:</strong> <a href="{{ order.tracking_id }}">Track Delivery Status</a></p>
+                </div>
+
+                <!-- Order Items -->
+                <div class="table-wrapper">
+                <div class="table-responsive mt-3">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Return Request</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.order_items.all %}
+                            <tr>
+                                <td>{{ item.product.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>₹{{ item.price }}</td>
+                                <td>₹{{ item.get_total_price }}</td>
+                                <td>
+                                    {% if not order.placed_at|can_return %}
+                                    <span class="text-danger">Not eligible for return after 24 hours.</span>
+                                    {% elif not item.return_requests.exists %}
+                                    <form method="post" action="{% url 'create_return_request' item.id %}" class="return-request-form">
+                                        {% csrf_token %}
+                                        <textarea class="form-control mb-2" name="reason" placeholder="Reason for return" rows="1" required></textarea>
+                                        <button type="submit" class="btn btn-danger btn-sm">Request Return</button>
+                                    </form>
+                                    {% else %}
+                                    <span class="text-success">Return request submitted.</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    {% endfor %}
+{% else %}
+<p>You have no past orders.</p>
+{% endif %}
+</div>
+<script>
+    // Handle dynamic form submission for return requests
+    document.addEventListener('DOMContentLoaded', function () {
+        const forms = document.querySelectorAll('.return-request-form');
+        
+        forms.forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // Prevent default form submission
+    
+                const formData = new FormData(form);
+                const actionUrl = form.getAttribute('action');
+    
+                fetch(actionUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    }
+                })
+                .then(response => response.json())  // Assuming JSON response from the view
+                .then(data => {
+                    if (data.success) {
+                        // Update UI to reflect successful return request
+                        form.innerHTML = '<p class="text-success">Return request submitted successfully.</p>';
+                    } else {
+                        alert('An error occurred: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while submitting the return request.');
+                });
+            });
+        });
+    });
+    </script>
+{% endblock %}

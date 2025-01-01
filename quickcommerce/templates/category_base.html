@@ -1,0 +1,44 @@
+{% extends 'base_index.html' %}
+
+{% block title %}
+{{ category_name }} - Rapparel
+{% endblock %}
+
+{% block content %}
+
+<div class="content-container mt-5 mb-5">
+  <h3 class="text-center">Category - {{ category_name }}</h3>
+  
+  <!-- Store Cards -->
+  <div id="storeCardsContainer" class="row mt-5 mb-5">
+    {% if nearby_stores %}
+
+    <!-- Loop through the stores passed from the view -->
+    {% for store, distance, estimated_arrival_time_minutes  in nearby_stores %}
+      <div class="col-sm-6 col-lg-3 store-card {% if forloop.counter > 8 %}d-none{% endif %}">
+          <a href="{% url 'store_detail' store.slug %}" class="text-decoration-none text-dark">
+              <div class="card mb-4">
+                  <img src="{{ store.display_image.url }}" class="card-img-top" alt="{{ store.name }}">
+                  <div class="card-body store-info">
+                      <h5 class="card-title">{{ store.name }}</h5>
+                      <p class="card-text text-right">{{ estimated_arrival_time_minutes }} min</p>
+                  </div>
+              </div>
+          </a>
+      </div>
+  {% endfor %}
+    {% else %}
+        <!-- No stores found message -->
+        <div class="col-12 text-center">
+            <p class="mt-4">No stores found in your area.</p>
+        </div>
+    {% endif %}
+  </div>
+
+  <!-- View More Button -->
+  <div class="text-center mt-4">
+    <button id="viewMoreBtn" class="btn btn-danger">View More</button>
+  </div>
+</div>
+
+{% endblock %}

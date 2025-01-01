@@ -1,0 +1,592 @@
+
+{% extends 'base_index.html' %}
+
+{% block title %}
+Checkout - Rapparel
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom styles */
+    .card-product img {
+        margin-left: 10px;
+        max-width: 90%;
+        max-width: 100%;
+        height: auto;
+    }
+    .promo-input {
+        border: 1px solid #f50057;
+        border-radius: 5px;
+    }
+    .btn-apply {
+        background-color: #f50057;
+        color: white;
+    }
+    .btn-apply:hover {
+        background-color: #d9004c;
+    }
+    .price-details {
+        font-size: 16px;
+    }
+    .total-price {
+        font-size: 18px;
+        font-weight: bold;
+    }
+    .price-summary {
+        font-size: 14px;
+    }
+    .payment-option-btn {
+        border: 1px solid #ddd;
+        width: 100%;
+    }
+    .footer-section {
+        margin-top: 40px;
+        font-size: 14px;
+    }
+
+    @media(max-width:760px){
+        .container-fluid {
+            margin-top: 11rem !important;
+        }
+        
+    }
+    @media (max-width:768px){
+        .rowwe{
+            margin-top: 9rem ;
+        }
+        #checktabmsg{
+            margin-top: 14rem !important;
+        }
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<!-- Delivery Section -->
+<!-- <section class="container mt-4">
+<div class="d-flex align-items-center">
+    <i class="bi bi-geo-alt-fill fs-3"></i>
+    <div class="ms-3">
+        <h6>Delivery at Home - Flat no:301, SVR Enclave, Hyper Nagar, Vasavi, Maharashtra</h6>
+    </div>
+</div>
+</section> -->
+
+<!-- Product and Order Summary Section -->
+<section class="container mt-4">
+{% if user.is_authenticated %}
+<div class="row rowwe">
+    <!-- Left Section: Product details -->
+    <div class="col-md-8">
+        <!-- Product Card -->
+        
+        <div class="card mb-3 card-product">
+            {% if cart_items %}
+        {% for item in cart_items %}
+            <div class="row g-0 cart-item" id="cart-item-{{ item.id }}">
+                <div class="col-md-3 p-2">
+                    <img class="rounded-4" src="{{ item.variant_image }}" alt="{{ item.product.name }}">
+                </div>
+                <div class="col-md-9">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ item.product.name }}</h5>
+                        <p class="card-text"><small class="text-muted">Category : {{ item.product.category }}</small> 
+                        <small class="text-muted"> [{% for key, value in item.variant_attributes.items %}
+                            {{ key|title }}: {{ value }}
+                            {% if not forloop.last %}, {% endif %}
+                        {% endfor %}]</small></p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <!-- <span style="text-decoration: line-through;" class="text-muted">₹ {{ item.product.mrp }}</span> -->
+                                <span class="fw-bold ms-2">₹ {{ item.variant_price }}</span>
+                            </div>
+                            <div class="input-group input-group-sm ms-3" style="width: 100px;">
+                                <button class="btn btn-outline-secondary btn-sm btn-decrement" type="button" data-id="{{ item.id }}">-</button>
+                                <input type="text" class="form-control text-center quantity-input" value="{{ item.quantity }}" readonly>
+                                <button class="btn btn-outline-secondary btn-sm btn-increment" type="button" data-id="{{ item.id }}">+</button>
+                                <input type="hidden" id="store-id" name="store_id" value="{{ item.product.store.id }}">
+                            </div>
+                            <form method="POST">
+                                {% csrf_token %}
+                                <a href="#" class="text-danger ms-2" id="delete-btn" data-id="{{ item.id }}"><i class="bi bi-trash"></i></a>
+                            </form>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="card-body">
+                <p>Your cart is empty!</p>
+            </div>
+            
+            {% endif %}
+        </div>
+
+       
+
+        <!-- User Details Section -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6>Your Details</h6>
+                <!-- Full Name -->
+            <div class="mb-3">
+                <label for="full-name" class="form-label">Full Name</label>
+                <input type="text" name="full_name" id="full-name" class="form-control" value="{{request.user.first_name}} {{request.user.last_name}}" required>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" name="email" id="email" class="form-control" value="{{ request.user.email }}" required>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="mb-3">
+                <label for="phone-number" class="form-label">Phone Number</label>
+                <input type="text" name="phone_number" id="phone-number" class="form-control" value="{{ request.user.phone_number }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="payment-select">Payment Mode:</label>
+                <select id="payment-select" class="form-select form-control mb-3">
+                        <option value="online">Online Payment</option>
+                        <option value="cod">Cash On Delivery</option>
+                </select>
+            </div>
+                {% if addresses %}
+            <!-- Select box for existing addresses -->
+            <label for="address-select">Select an Address:</label>
+            <select id="address-select" class="form-select form-control mb-3">
+                {% for address in addresses %}
+                    <option value="{{ address.id }}">{{ address.street_address }}, {{ address.city }}, {{ address.state }}, {{ address.country }} - {{ address.postal_code }}</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <p>No Addresses available. </p>
+            {% endif %}
+
+            <!-- Button to show the address form -->
+            <button class="btn btn-primary" id="add-address-btn">Add Address</button>
+            <button class="btn btn-secondary" id="serviceability-btn">Check Serviceability</button>
+            <div id="serviceability-message" class="mt-3"></div>
+            <!-- Address Form (hidden by default) -->
+            <form id="add-address-form" class="mt-3" method="POST" style="display: none;">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="street-address" class="form-label">Street Address</label>
+                    <input type="text" name="street_address" id="street-address" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="city" class="form-label">City</label>
+                    <input type="text" name="city" id="city" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="state" class="form-label">State</label>
+                    <input type="text" name="state" id="state" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="postal-code" class="form-label">Postal Code</label>
+                    <input type="text" name="postal_code" id="postal-code" class="form-control" required>
+                    <div id="postal-code-error" style="color: red; display: none;">
+                        Sorry, we currently do not service this area. Please check the postal code and try again.
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="country" class="form-label">Country</label>
+                    <input type="text" name="country" id="country" class="form-control" required>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Save Address</button>
+            </form>
+            </div>
+        </div>
+    </div>
+
+
+
+  
+
+
+
+    <!-- Right Section: Price details -->
+    <div class="col-md-4">
+         <!-- Offers Section -->
+         <div class="card d-none mb-3">
+            <div class="card-body">
+                <h6>Offers</h6>
+                <form method="POST" action="/apply-coupon/" id="coupon-form">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" class="form-control promo-input" name="code" placeholder="Enter Promo Code" required>
+                        <button type="submit" class="btn btn-apply ms-2">Apply</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">Price Details</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between price-summary">
+                        <span>Price</span>
+                        <span id="total-price">₹ {{ total_price }}</span>
+                    </li>
+                    <!-- <li class="list-group-item d-flex justify-content-between price-summary">
+                        <span>Discount</span>
+                        <span id="discount">- ₹ {{ discount }}</span>
+                    </li> -->
+                    <li class="list-group-item d-flex justify-content-between price-summary">
+                        <span>Delivery Charges</span>
+                        <span id="delivery-charges">
+                            <del>₹ {{ delivery_charges }}</del> 
+                            <span id="updated-delivery-charges">₹ 0</span>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between total-price">
+                        <span>Total Amount</span>
+                        <span id="total-amount">₹ {{ total_amount }}</span>
+                    </li>
+                </ul>
+                <form method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger w-100 mt-3" id="place-order-btn">Place Order</button>
+                </form>
+                <!-- Loading spinner (hidden by default) -->
+                <div id="loading-spinner" style="display: none;">
+                    <p>Processing your order...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="container d-flex justify-content-center align-items-center mb-5 mt-5">
+    <div class="text-center">
+        <p class="fs-4">Please Log in to continue.</p>
+        <a href="{% url 'login' %}?next={% url 'cart_checkout' %}" class="btn btn-danger">Log In</a>
+    </div>
+</div>{% endif %}
+</section>
+
+
+<!-- Payment Options Section -->
+<!-- <section class="container mt-4">
+<div class="card">
+    <div class="card-body">
+        <h6>Payment Options</h6>
+        <div class="mb-3 row">
+            <div class="col-12 col-md-4 mb-2">
+                <button class="btn btn-outline-primary w-100"><i class="bi bi-google"></i> Google Pay</button>
+            </div>
+            <div class="col-12 col-md-4 mb-2">
+                <button class="btn btn-outline-primary w-100"><i class="bi bi-paypal"></i> PayPal</button>
+            </div>
+            <div class="col-12 col-md-4 mb-2">
+                <button class="btn btn-outline-primary w-100"><i class="bi bi-credit-card"></i> Credit Card</button>
+            </div>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="cardNumber" class="form-label">Card Number</label>
+            <input type="text" class="form-control" id="cardNumber" placeholder="Card No. XXXX XXXX XXXX XXXX">
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="expiryDate" class="form-label">Expiry Date</label>
+                <input type="text" class="form-control" id="expiryDate" placeholder="MM/YY">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="cvv" class="form-label">CVV</label>
+                <input type="text" class="form-control" id="cvv" placeholder="CVV">
+            </div>
+        </div>
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="saveDetails">
+            <label class="form-check-label" for="saveDetails">Save Details</label>
+        </div>
+    </div>
+</div>
+</section> -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function() {
+
+     // Check Serviceability
+     $('#serviceability-btn').click(function () {
+            const addressId = $('#address-select').val();
+            const storeId = $('#store-id').val();
+            if (!addressId) {
+                $('#serviceability-message').text('Please select an address first.').addClass('text-danger');
+                return;
+            }
+
+            $.ajax({
+                url: '/check-serviceability/',
+                type: 'POST',
+                
+                data: JSON.stringify({
+                    'address_id': addressId,  // Send the address ID
+                    'store_id': storeId       // Send the store ID
+                }),
+                success: function (response) {
+                    if (response.is_serviceable) {
+                        $('#serviceability-message')
+                            .text('The location is serviceable!')
+                            .removeClass('text-danger')
+                            .addClass('text-success');
+                        $('#place-order-btn').prop('disabled', false); // Enable the place order button
+                    } else {
+                        $('#serviceability-message')
+                            .text('We are not serviceable currently. Try again later.')
+                            .removeClass('text-success')
+                            .addClass('text-danger');
+                        $('#place-order-btn').prop('disabled', true); // Disable the place order button
+                    }
+                    // Fetch delivery charges from the response and update the DOM element
+                    if (response.delivery_charges) {
+                        $('#delivery-charges').text('₹ ' + response.delivery_charges); // Update the delivery charges
+                    }
+                },
+                error: function () {
+                    $('#serviceability-message')
+                        .text('An error occurred while checking serviceability. Please try again.')
+                        .removeClass('text-success')
+                        .addClass('text-danger');
+                }
+            });
+        });
+
+        // Restrict Order Placing
+        $('#place-order-btn').click(function (e) {
+            if ($('#place-order-btn').is(':disabled')) {
+                e.preventDefault(); // Prevent form submission
+                alert('Please check serviceability before placing your order.');
+            }
+        });
+
+    $('#place-order-btn').click(function(e) {
+        e.preventDefault();
+
+        // Show loading spinner
+        $('#loading-spinner').show();
+
+        // Collect form data
+        const fullName = $('#full-name').val();
+        const email = $('#email').val();
+        const phoneNumber = $('#phone-number').val();
+        const addressId = $('#address-select').val();
+        const paymentMethod = $('#payment-select').val();
+        
+        const totalAmount = parseFloat($('#total-amount').text().replace('₹ ', ''));  // Get total amount from the page
+
+
+        // AJAX request to place the order
+        $.ajax({
+            url: '/place-order-ajax/',  // Update the URL if necessary
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken  // Pass CSRF token as a header
+            },
+            data: {
+                'full_name': fullName,
+                'email': email,
+                'phone_number': phoneNumber,
+                'address_id': addressId,
+                'payment_method': paymentMethod,
+                'total_amount': totalAmount 
+            },
+            success: function(response) {
+                console.log(response)
+                if (response.success) {
+                var payPageUrl = response.paypage_url;
+                
+                if (payPageUrl) {
+                    // Redirect to the payment page
+                    window.location.href = payPageUrl;
+                } else {
+                    alert("Payment page URL not found.");
+                }
+                 } else {
+                    alert(response.message);
+                }
+            },
+            error: function(xhr) {
+                alert('Something went wrong. Please try again.');
+            },
+            complete: function() {
+                // Hide loading spinner
+                $('#loading-spinner').hide();
+            }
+        });
+    });
+
+
+
+
+
+    // Increment quantity
+$('.btn-increment').click(function() {
+    var cartItemId = $(this).data('id');  // Get cart item ID from data attribute
+    var input = $(this).siblings('input.quantity-input');  // Get the input field
+    var currentQuantity = parseInt(input.val());
+    input.val(currentQuantity + 1);  // Increment the quantity in the input field
+    updateCartItem(cartItemId, currentQuantity + 1, 'update');  // Send AJAX request with 'update' action
+});
+
+// Decrement quantity
+$('.btn-decrement').click(function() {
+    var cartItemId = $(this).data('id');  // Get cart item ID from data attribute
+    var input = $(this).siblings('input.quantity-input');  // Get the input field
+    var currentQuantity = parseInt(input.val());
+    if (currentQuantity > 1) {
+        input.val(currentQuantity - 1);  // Decrement the quantity in the input field
+        updateCartItem(cartItemId, currentQuantity - 1, 'update');  // Send AJAX request with 'update' action
+    } else {
+        // If the quantity reaches 1, confirm deletion
+        if (confirm('Do you want to remove this item from the cart?')) {
+            deleteCartItem(cartItemId);  // Send AJAX request to delete the item
+        }
+    }
+});
+
+// Handle delete button click
+$('#delete-btn').click(function(e) {
+    e.preventDefault();
+    var cartItemId = $(this).data('id');
+    deleteCartItem(cartItemId);  // Send AJAX request to delete the item
+});
+
+// AJAX call to update cart item quantity or delete cart item
+function updateCartItem(cartItemId, newQuantity, action) {
+    $.ajax({
+        url: '/update-cart-item/',  // Your view URL to handle the update and delete
+        type: 'POST',
+        data: {
+            'cart_item_id': cartItemId,
+            'quantity': newQuantity,  // For updating the quantity
+            'action': action,  // 'update' or 'delete'
+            'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val(),
+        },
+        success: function(response) {
+            // Update the price card with new values
+            $('#total-price').text('₹ ' + response.total_price);
+            $('#discount').text('- ₹ ' + response.discount);
+            $('#delivery-charges').text('₹ ' + response.delivery_charges);
+            $('#total-amount').text('₹ ' + response.total_amount);
+            
+            // Optionally remove the cart item row if it's been deleted
+            if (action === 'delete') {
+                $('#cart-item-' + cartItemId).remove();
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Something went wrong. Please try again.');
+        }
+    });
+}
+
+    // Separate function to delete cart item
+    function deleteCartItem(cartItemId) {
+        updateCartItem(cartItemId, 0, 'delete');  // Reuse the updateCartItem function with action 'delete'
+    }
+
+
+
+    //Toggle the visibility of the add address form
+    $("#add-address-btn").on("click", function() {
+        $("#add-address-form").toggle();  // Show/hide the form
+    });
+
+    // Handle form submission via AJAX
+    $("#add-address-form").on("submit", function(e) {
+        e.preventDefault();  // Prevent the form from submitting normally
+        const validPostalCodes = [
+        "122107", "122001", "122508", "122508", "122101", "122105", "122006", "122001", "122503", "122503", 
+        "122104", "122108", "122505", "122103", "122102", "122413", "122508", "122413", "122508", "122108", 
+        "122017", "122002", "122103", "122502", "122102", "122103", "122006", "122413", "122505", "122008", 
+        "122010", "122002", "122104", "122105", "122016", "123106", "122506", "122101", "122104", "122107", 
+        "122009", "122505", "122102", "122103", "122103", "122508", "122001", "122001", "122001", "122003", 
+        "122011", "122001", "122018", "122006", "122003", "122003", "122105", "122104", "122052", "122414", 
+        "122016", "122016", "122007", "122505", "122502", "122508", "122503", "122503", "122502", "122504", 
+        "122504", "122105", "122105", "122003", "122101", "122502", "122105", "123401", "122504", "122051", 
+        "122502", "122504", "122004", "122001", "122414", "122506", "122004", "122102", "122103", "122414", 
+        "122103", "122107", "122004", "122004", "122414", "122107", "122108", "122051", "122505", "122102", 
+        "122504", "122001", "122502", "122105", "122413", "122108", "122108", "122508", "122508", "122414", 
+        "122503", "122004", "122002", "122001", "122504", "122051", "122107", "122413", "122502", "122015", 
+        "122017", "122101", "122503", "122413", "122506", "122508", "122508", "122006", "122102", "122502", 
+        "122105", "122104", "122508", "122103", "122102", "122103", "122108", "122015", "122506", "122508", 
+        "122502", "122001", "122413", "122508", "122004", "122104", "122508", "122508", "122003", "122001", 
+        "122003", "122107", "122506", "122105", "122414", "122107", "122107", "122502", "122105", "122105", 
+        "122101", "122502", "122107", "122108", "122503", "122001", "122505"
+    ];// Add more Gurgaon postal codes here if needed
+
+        // Get the postal code entered by the user
+        const postalCode = $("#postal-code").val();
+
+        if (!validPostalCodes.includes(postalCode)) {
+            $("#postal-code-error").show();  // Show the error message
+            return;  // Stop form submission
+        } else {
+            $("#postal-code-error").hide();  // Hide the error message
+        }
+        $.ajax({
+            url: "{% url 'add_address' %}",  // URL where the form will be submitted
+            type: "POST",
+            data: $(this).serialize(),  // Serialize form data
+            success: function(response) {
+                // Add the new address to the select box
+                let newOption = `<option value="${response.id}">${response.street_address}, ${response.city}, ${response.state}, ${response.country} - ${response.postal_code}</option>`;
+                $("#address-select").append(newOption);  // Add new address to the select dropdown
+                
+                // Clear and hide the form
+                $("#add-address-form")[0].reset();
+                $("#add-address-form").hide();
+                
+                // Optionally select the new address
+                $("#address-select").val(response.id);
+                location.reload();
+            },
+            error: function(xhr, status, error) {
+                alert("There was an error saving the address. Please try again.");
+            }
+        });
+    });
+
+   
+    $('#coupon-form').submit(function(e) {
+    e.preventDefault();
+    const promoCode = $('.promo-input').val();
+    const totalPrice = parseFloat($('#total-price').text().replace('₹ ', ''));
+    const deliveryCharges = parseFloat($('#delivery-charges').text().replace('₹ ', ''));
+
+    $.ajax({
+        url: '/apply-coupon/',
+        method: 'POST',
+        data: {
+            'code': promoCode,
+            'total_price': totalPrice,
+            'delivery_charges': deliveryCharges,
+            'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+        },
+        success: function(response) {
+            if (response.success) {
+                $('#total-price').text('₹ ' + response.new_total_price);  // Update the total price
+                $('#discount').text('- ₹ ' + response.discount_amount);  // Update the discount
+                $('#total-amount').text('₹ ' + response.total_amount);  // Update the total amount
+                alert('Coupon applied successfully!');
+            }
+        },
+        error: function(xhr) {
+            alert(xhr.responseJSON.error);
+        }
+    });
+});
+});
+
+</script>
+{% endblock %}

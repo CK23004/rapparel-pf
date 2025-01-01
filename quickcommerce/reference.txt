@@ -1,0 +1,436 @@
+class LandingPageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Fetch banners, categories, and brands
+        banners = Banner.objects.filter(is_active=True)
+        categories = Category.objects.all()
+        brands = Brand.objects.all()
+
+        banners_serializer = BannerSerializer(banners, many=True)
+        categories_serializer = CategorySerializer(categories, many=True)
+        brands_serializer = BrandSerializer(brands, many=True)
+
+        # Initialize variables
+        address = None
+        nearby_stores = []
+        saved_addresses = []
+        featured_stores = []
+
+        # Check if the user is authenticated and fetch saved addresses
+        user = request.user
+        if user.is_authenticated:
+            saved_addresses = Address.objects.filter(user=user, is_default=True)
+            if saved_addresses.exists():
+                user_address = saved_addresses.first()
+                address_location = f"{user_address.street_address}, {user_address.city}, {user_address.state}, {user_address.country}"
+                geolocator = Nominatim(user_agent="quick-commerce-app")
+                location = geolocator.reverse(address_location)
+                address = location.address if location else address_location
+
+                # Convert user's saved address to a tuple (latitude, longitude)
+                user_coords = (user_address.latitude, user_address.longitude)
+            else:
+                address = "No saved address found."
+
+        # Check if real-time location is provided in the query parameters
+        latitude = request.query_params.get('latitude')
+        longitude = request.query_params.get('longitude')
+        if latitude and longitude:
+            user_coords = (float(latitude), float(longitude))
+            geolocator = Nominatim(user_agent="quick-commerce-app")
+            location = geolocator.reverse(user_coords, exactly_one=True)
+            address = location.address if location else "Location address not found"
+            # Find nearby stores based on coordinates
+            stores = Store.objects.all()
+            store_distances = []
+            for store in stores:
+                store_coords = (store.latitude, store.longitude)
+                distance = geodesic(user_coords, store_coords).kilometers
+                store_distances.append((store, distance))
+            store_distances.sort(key=lambda x: x[1])
+            nearby_stores = [store[0] for store in store_distances[:12]]
+        else:
+            # No real-time location provided, fetch featured stores
+            featured_stores = Store.objects.filter(is_featured=True).order_by('-id')[:12]
+        
+        # Serialize the store data
+        stores_serializer = StoreSerializer(nearby_stores if latitude and longitude else featured_stores, many=True)
+
+        data = {
+            'banners': banners_serializer.data,
+            'categories': categories_serializer.data,
+            'brands': brands_serializer.data,
+            'user_address': address,
+            'saved_addresses': [f"{addr.street_address}, {addr.city}, {addr.state}, {addr.country}" for addr in saved_addresses],
+            'nearby_stores': stores_serializer.data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+
+#when clicked on category this view will be rendered...
+class CategoryStoresView(APIView):
+    def get(self, request, *args, **kwargs):
+        category_id = request.query_params.get('category')
+        latitude = request.query_params.get('latitude')
+        longitude = request.query_params.get('longitude')
+        user_address_id = request.query_params.get('address_id')
+
+
+        # Validate category ID
+        if not category_id:
+            return Response({'error': 'Category ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            category = Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            return Response({'error': 'Category not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user_coords = None
+        if latitude and longitude:
+            user_coords = (float(latitude), float(longitude))
+        elif user_address_id:
+            try:
+                address = Address.objects.get(id=user_address_id)
+                user_coords = (address.latitude, address.longitude)
+            except Address.DoesNotExist:
+                return Response({'error': 'Address not found.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'error': 'Latitude and longitude are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch stores that belong to the category
+        stores = Store.objects.filter(categories=category)
+
+        # Calculate distances and sort by proximity
+        store_distances = []
+        for store in stores:
+            store_coords = (store.latitude, store.longitude)
+            distance = geodesic(user_coords, store_coords).kilometers
+            store_distances.append((store, distance))
+
+        store_distances.sort(key=lambda x: x[1])
+        nearby_stores = [store[0] for store in store_distances]
+
+        # Serialize the store data
+        stores_serializer = StoreSerializer(nearby_stores, many=True)
+
+        data = {
+            'category': category.name,
+            'nearby_stores': stores_serializer.data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+#when clicked on brand this will be rendered
+class BrandStoresView(APIView):
+    def get(self, request, *args, **kwargs):
+        brand_id = request.query_params.get('brand')
+        latitude = request.query_params.get('latitude')
+        longitude = request.query_params.get('longitude')
+        user_address_id = request.query_params.get('address_id')
+
+        if not brand_id:
+            return Response({'error': 'Brand ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            brand = Brand.objects.get(id=brand_id)
+        except Brand.DoesNotExist:
+            return Response({'error': 'Brand not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get user's location or selected address
+        user_coords = None
+        if latitude and longitude:
+            user_coords = (float(latitude), float(longitude))
+        elif user_address_id:
+            try:
+                address = Address.objects.get(id=user_address_id)
+                user_coords = (address.latitude, address.longitude)
+            except Address.DoesNotExist:
+                return Response({'error': 'Address not found.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'error': 'Latitude, longitude, or address_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch stores that have the brand
+        stores = Store.objects.filter(brands=brand)
+
+        # Calculate distances and find the nearest store
+        store_distances = []
+        for store in stores:
+            store_coords = (store.latitude, store.longitude)
+            distance = geodesic(user_coords, store_coords).kilometers
+            store_distances.append((store, distance))
+
+        store_distances.sort(key=lambda x: x[1])
+        nearest_store = store_distances[0][0] if store_distances else None
+
+        # Fetch products from the nearest store filtered by the brand
+        products = Product.objects.filter(store=nearest_store, brand=brand) if nearest_store else []
+
+        # Calculate estimated arrival time
+        estimated_arrival_time = None
+        if nearest_store:
+            estimated_arrival_time = int(store_distances[0][1] * 60)  # Assuming 1 km = 1 minute of travel
+
+        # Serialize store and brand data
+        all_stores_serializer = StoreSerializer([store[0] for store in store_distances], many=True)
+        nearest_store_serializer = StoreSerializer(nearest_store)
+        categories = nearest_store.categories.all()
+        categories_serializer = CategorySerializer(categories, many=True)
+        brand_serializer = BrandSerializer(brand)
+        products_serializer = ProductSerializer(products, many=True)
+
+
+        data = {
+            'brand': brand_serializer.data,
+            'nearest_store': nearest_store_serializer.data,
+            'all_stores': all_stores_serializer.data,
+            'categories': categories_serializer.data,
+            'estimated_arrival_time': estimated_arrival_time,
+            'products': products_serializer.data,
+
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+
+#individual store view
+class StoreDetailView(APIView):
+    def get(self, request, store_slug):
+        try:
+            # Fetch the store by slug
+            store = Store.objects.get(slug=store_slug)
+            
+            user_location = request.query_params.get('location')
+            address_id = request.query_params.get('address_id')
+            user_coords = None
+
+            if user_location:
+                latitude, longitude = map(float, user_location.split(','))
+                user_coords = (latitude, longitude)
+            elif address_id:
+                try:
+                    address = Address.objects.get(id=address_id, user=request.user)
+                    user_coords = (address.latitude, address.longitude)
+                except Address.DoesNotExist:
+                    return Response({'error': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Calculate the estimated arrival time if user location is available
+            estimated_arrival_time = None
+            if user_coords:
+                store_coords = (store.latitude, store.longitude)
+                distance = geodesic(user_coords, store_coords).kilometers
+
+                # Assuming an average speed of 35 km/h for delivery (you can adjust this)
+                average_speed_kmh = 35
+                estimated_time_hours = distance / average_speed_kmh
+                estimated_arrival_time = datetime.timedelta(hours=estimated_time_hours)
+
+
+            
+            # Fetch all categories and brands associated with the store
+            categories = Category.objects.filter(product__store=store).distinct()
+            brands = Brand.objects.filter(product__store=store).distinct()
+            
+            # Fetch all products available in the store
+            products = Product.objects.filter(store=store)
+            
+            # Serialize the data
+            store_serializer = StoreSerializer(store)
+            categories_serializer = CategorySerializer(categories, many=True)
+            brands_serializer = BrandSerializer(brands, many=True)
+            products_serializer = ProductSerializer(products, many=True)
+
+            # Prepare the response data
+            data = {
+                'store': store_serializer.data,
+                'categories': categories_serializer.data,
+                'brands': brands_serializer.data,
+                'products': products_serializer.data,
+                'estimated_arrival_time': estimated_arrival_time,
+
+            }
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Store.DoesNotExist:
+            return Response({'error': 'Store not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+#single product page
+class ProductDetailView(APIView):
+    def get(self, request, slug, *args, **kwargs):
+        try:
+            product = Product.objects.get(slug=slug)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        product_serializer = ProductSerializer(product, context={'request': request})
+
+        # Fetch related store, brand, and category data
+        store_serializer = StoreSerializer(product.store)
+        brand_serializer = BrandSerializer(product.brand)
+        category_serializer = CategorySerializer(product.category)
+
+        # Fetch similar products
+        similar_products = product.get_similar_products()
+        similar_products_serializer = ProductSerializer(similar_products, many=True, context={'request': request})
+
+        data = {
+            'product': product_serializer.data,
+            'store': store_serializer.data,
+            'brand': brand_serializer.data,
+            'category': category_serializer.data,
+            'similar_products': similar_products_serializer.data,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+#wishlist toggle & page view
+class WishlistToggleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        wishlist = Wishlist.objects.filter(user=request.user)
+        wishlist_serializer = WishlistSerializer(wishlist, many=True)
+        return Response(wishlist_serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        product_slug = request.data.get('product_slug')
+        try:
+            product = Product.objects.get(slug=product_slug)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        Wishlist.objects.get_or_create(user=request.user, product=product)
+        return Response({'status': 'added'}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, *args, **kwargs):
+        product_slug = request.data.get('product_slug')
+        try:
+            product = Product.objects.get(slug=product_slug)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        Wishlist.objects.filter(user=request.user, product=product).delete()
+        return Response({'status': 'removed'}, status=status.HTTP_204_NO_CONTENT)
+
+#add to cart
+class AddToCartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        product_id = request.data.get('product_id')
+        quantity = request.data.get('quantity', 1)
+        
+        product = get_object_or_404(Product, id=product_id)
+        store = product.store
+        cart, created = Cart.objects.get_or_create(user=request.user)
+
+        if cart.store and cart.store != store:
+            # Empty the cart if the store is different
+            cart.items.clear()
+
+        cart.store = store
+        cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+        cart_item.quantity = quantity
+        cart_item.save()
+        cart.save()
+
+        return Response({'message': 'Item added to cart successfully'}, status=status.HTTP_200_OK)
+
+# Cart Page View
+class CartPageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        cart = Cart.objects.filter(user=request.user).first()
+        if cart:
+            items = CartItemSerializer(cart.items.all(), many=True).data
+            store = StoreSerializer(cart.store).data
+            return Response({'store': store, 'items': items}, status=status.HTTP_200_OK)
+        return Response({'message': 'Cart is empty'}, status=status.HTTP_200_OK)
+
+
+
+#checkout page view
+class CheckoutPageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            cart = Cart.objects.get(user=request.user)
+        except Cart.DoesNotExist:
+            return Response({'detail': 'Cart is empty.'}, status=status.HTTP_404_NOT_FOUND)
+
+        addresses = Address.objects.filter(user=request.user)
+        address_serializer = AddressSerializer(addresses, many=True)
+        cart_serializer = CartSerializer(cart)
+
+        data = {
+            'cart': cart_serializer.data,
+            'addresses': address_serializer.data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        cart = Cart.objects.get(user=request.user)
+        address_id = request.data.get('address_id')
+        payment_method = request.data.get('payment_method')
+
+        if not cart.items.exists():
+            return Response({'error': 'Your cart is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            address = Address.objects.get(id=address_id, user=request.user)
+        except Address.DoesNotExist:
+            return Response({'error': 'Invalid address'}, status=status.HTTP_400_BAD_REQUEST)
+
+        total_amount = sum(item.product.sale_price * item.quantity for item in cart.items.all())
+
+        # Create the order
+        order = Order.objects.create(
+            user=request.user,
+            address=address,
+            total_amount=total_amount,
+            payment_status='Pending',
+            order_status='Processing',
+            payment_method=payment_method,
+        )
+
+        # Create order items
+        for item in cart.items.all():
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price=item.product.sale_price,
+            )
+
+        # Clear the cart after order creation
+        cart.items.all().delete()
+
+        # Send Invoice Email
+        subject = f"Invoice for Order #{order.id}"
+        context = {
+            'order': order,
+            'user': request.user,
+            'logo_url': 'https://rapparel.com/static/logo.png',  # replace with actual logo URL
+        }
+
+        html_message = render_to_string('invoice_email.html', context)
+        plain_message = strip_tags(html_message)
+
+        customer_email = EmailMessage(subject, html_message, 'info@rapprel.com', [request.user.email])
+        customer_email.content_subtype = 'html'
+        customer_email.send()
+
+        # Send to Owner
+        owner_email = EmailMessage(subject, html_message, 'info@rapprel.com', ['owner@rapprel.com'])
+        owner_email.content_subtype = 'html'
+        owner_email.send()
+
+        # Send to Admin
+        admin_email = EmailMessage(subject, html_message, 'info@rapprel.com', ['admin@rapparel.com'])
+        admin_email.content_subtype = 'html'
+        admin_email.send()
+
+        return Response({'order_id': order.id, 'message': 'Order placed successfully'}, status=status.HTTP_201_CREATED)

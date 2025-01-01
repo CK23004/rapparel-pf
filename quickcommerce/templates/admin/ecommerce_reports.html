@@ -1,0 +1,101 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}E-commerce Reports{% endblock %}
+
+{% block content %}
+<h1>E-commerce Reports Dashboard</h1>
+
+<div>
+    <h2>Total Sales</h2>
+    <p>{{ total_sales }} USD</p>
+</div>
+
+<div>
+    <h2>Sales Per Store</h2>
+    <canvas id="salesPerStoreChart"></canvas>
+</div>
+
+<div>
+    <h2>Most Popular Products</h2>
+    <canvas id="popularProductsChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Using json_script to pass sales_per_store and popular_products data to JavaScript -->
+<script type="application/json" id="sales-per-store-data">
+    {{ sales_per_store|json_script:"salesPerStore" }}
+</script>
+<script type="application/json" id="popular-products-data">
+    {{ popular_products|json_script:"popularProducts" }}
+</script>
+
+<script>
+    // Access the data from json_script safely
+    var salesPerStoreData = JSON.parse(document.getElementById('sales-per-store-data').textContent);
+    var popularProductsData = JSON.parse(document.getElementById('popular-products-data').textContent);
+
+    // Prepare the labels and data for Sales Per Store chart
+    var salesPerStoreLabels = salesPerStoreData.map(function(store) {
+        return store.store__name;
+    });
+    var salesPerStoreSales = salesPerStoreData.map(function(store) {
+        return store.store_sales;
+    });
+
+    // Prepare the labels and data for Popular Products chart
+    var popularProductsLabels = popularProductsData.map(function(product) {
+        return product.product__name;
+    });
+    var popularProductsSales = popularProductsData.map(function(product) {
+        return product.total_sold;
+    });
+
+    // Sales per store chart
+    var ctx1 = document.getElementById('salesPerStoreChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: salesPerStoreLabels,
+            datasets: [{
+                label: 'Sales Per Store',
+                data: salesPerStoreSales,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Popular products chart
+    var ctx2 = document.getElementById('popularProductsChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: popularProductsLabels,
+            datasets: [{
+                label: 'Units Sold',
+                data: popularProductsSales,
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

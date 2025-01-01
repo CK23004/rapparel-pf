@@ -1,0 +1,67 @@
+
+{% extends 'dashboard/customer_dash.html' %}
+{% block title %}Saved Addresses{% endblock %}
+
+{% block account_content  %}
+
+<div class="container mt-4">
+    <h3 class="mb-4">Saved Addresses</h3>
+    {% if saved_addresses %}
+<div class="accordion" id="ordersAccordion">
+    {% for address in saved_addresses %}
+    {% csrf_token %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingorder.id ">
+            <button class="accordion-button btn btn-outline-secondary w-80 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapseorder.id " aria-expanded="true" aria-controls="collapseorder.id ">
+                {{ forloop.counter }}] {{address.street_address}} , {{address.city}} , {{address.state}}, {{address.country}} , {{address.postal_code}}
+            </button>
+            <button class="btn btn-danger" id="removeaddress" data-address-id="{{address.id}}"><i class="bi bi-trash fs-6"></i></button>
+        </h2>
+       
+    </div>
+    {% endfor %}
+    
+</div>
+
+{% else %}
+<p>No saved addresses found.</p>
+{% endif %}
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).on('click', '#removeaddress', function () {
+    var addressId = $(this).data('address-id');  // Get the address ID from the data attribute
+
+    // Confirmation before deletion
+    if (confirm('Are you sure you want to delete this address?')) {
+        $.ajax({
+            url: '/customer/delete-address/',  // URL for the Django view
+            method: 'POST',
+            headers: {
+                        'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                    },
+            data: {
+                'address_id': addressId,
+                // CSRF token for security
+            },
+            success: function (response) {
+                if (response.status == 'success') {
+                    // Remove the address from the page (for example, hide the row)
+                    $('#address-' + addressId).remove();  // Assuming you wrap each address with an ID like 'address-{{ address.id }}'
+                    alert('Address deleted successfully!');
+                    location.reload();
+                } else {
+                    alert('Failed to delete address. Please try again.');
+                }
+            },
+            error: function (error) {
+                console.error('Error:', error);
+                alert('An error occurred while trying to delete the address.');
+            }
+        });
+    }
+});
+
+</script>
+{% endblock %}

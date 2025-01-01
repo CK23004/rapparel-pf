@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
+
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+        <h2 style="text-align: center; color: #333;">Order Confirmation</h2>
+        <p>Dear {{ order.full_name }},</p>
+        <p>Thank you for your order! Here are your order details:</p>
+
+        <h4 style="color: #333;">Order Details:</h4>
+        <p><strong>Order ID:</strong> {{ order.id }}</p>
+        <p><strong>Placed At:</strong> {{ order.placed_at|date:"Y-m-d H:i:s" }}</p>
+        <p><strong>Payment Status:</strong> {{ order.payment_status }}</p>
+        <p><strong>Delivery Status:</strong> {{ order.delivery_status }}</p>
+
+        <h4 style="color: #333;">Shipping Address:</h4>
+        <p>
+            {{ order.full_name }}<br>
+            {{ order.street_address }}<br>
+            {{ order.city }}, {{ order.state }} {{ order.pin_code }}<br>
+            {{ order.country }}<br>
+            Phone: {{ order.phone_number }}<br>
+            Email: {{ order.email }}<br>
+        </p>
+
+        <h4 style="color: #333;">Order Items:</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;" border="1" cellpadding="5" cellspacing="0">
+            <thead>
+                <tr>
+                    <th style="background-color: #f2f2f2; text-align: left;">Item</th>
+                    <th style="background-color: #f2f2f2; text-align: left;">Quantity</th>
+                    <th style="background-color: #f2f2f2; text-align: left;">Price (Rs.)</th>
+                    <th style="background-color: #f2f2f2; text-align: left;">Total (Rs.)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.order_items.all %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>{{ item.get_total_price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p style="font-weight: bold; margin-top: 20px;">Total Amount: Rs.{{ order.total_amount }}</p>
+
+        <p>If you have any questions about your order, feel free to contact us at {{customer_support}}</p>
+        <p>Thank you for shopping with us!</p>
+        <p>Team Rapparel</p>
+    </div>
+</body>
+</html>

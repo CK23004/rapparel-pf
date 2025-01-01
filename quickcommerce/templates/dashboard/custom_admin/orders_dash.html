@@ -1,0 +1,619 @@
+{% extends 'dashboard/custom_admin/base_dash.html' %}
+
+{% block content %}
+<div class="container pt-5">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <h2 class="mb-4 text-center">Manage Orders</h2>
+    {% load static %}
+    <audio id="newOrderAlert" src="{% static 'sounds/new-order-alert.mp3' %}" preload="auto" loop></audio>
+
+    <!-- Search Box -->
+    <form method="get" class="d-flex mb-4">
+        <input id="orders-search-box" type="text" name="search" class="form-control" placeholder="Search Orders" value="{{ search_query }}">
+    </form>
+    <!-- Custom Order Details Popup (Initially Hidden) -->
+<!-- Custom Order Details Popup (Initially Hidden) -->
+<div id="orderPopup" class="popup" style="display: none;">
+    <div class="popup-content">
+        <span id="closeOrderPopup" class="close">&times;</span>
+        <h5 id="orderPopupTitle">Order Details</h5>
+        <div id="orderPopupBody">
+            <!-- Order details will be injected here -->
+        </div>
+        
+    </div>
+</div>
+
+<!-- Generic Success Popup -->
+<div id="successPopup" class="popup" style="display: block;">
+    <div class="popup-content">
+        <!-- <span id="closeSuccessPopup" class="close">&times;</span> -->
+        <div id="successPopupBody">
+            <!-- Success message will be injected here -->
+        </div>
+        <div id="successPopupActions" class="d-flex justify-content-between align-items-center">
+            <h5 id="successPopupTitle" class="mb-0">Success</h5>
+            <button id="closeSuccessPopupBtn" class="btn btn-success">Ok</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Orders Table -->
+    <table class="table table-bordered table-striped table-hover">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Order ID</th>
+                <th>Placed At</th>
+                <th>Customer Name</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination-controls">
+       
+    </div>
+</div>
+
+
+
+<!-- CSS for Popup -->
+<style>
+    .popup {
+        display: none; 
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .popup-content {
+        background-color: #fefefe;
+        margin: 30px auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 600px;
+    }
+
+    .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        float: right;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+</style>
+
+<!-- jQuery and AJAX -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1.10.7/dayjs.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+}
+
+function debounce(func, delay) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+async function loadOrders(page = 1, searchQuery = '') {
+    try {
+        const response = await $.ajax({
+            url: '/dashboard/orders/fetch',  // Replace with the correct URL
+            data: {
+                page: page,
+                search: searchQuery
+            }
+        });
+
+        const tbody = $('table tbody');
+        tbody.empty();
+
+        // Use DocumentFragment for efficient DOM updates
+        const fragment = $(document.createDocumentFragment());
+
+        response.orders.forEach((order, index) => {
+            const fullName = response.is_store_owner ? `${order.full_name.slice(0, 1)}****` : order.full_name;
+            const row = `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${order.order_no}</td>
+                    <td>${dayjs(order.placed_at).format('DD MMM YYYY, hh:mm A')}</td>
+                    <td>${fullName}</td>
+                    <td>₹${order.total_amount}</td>
+                    <td id="order-status-${order.id}">${order.order_status}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm view-order" data-order-id="${order.id}">View</button>
+                    </td>
+                </tr>
+            `;
+            fragment.append(row);
+        });
+
+        tbody.append(fragment);
+        updatePagination(response.pagination);
+
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+    }
+}
+
+function updatePagination(pagination) {
+    const paginationContainer = $('#pagination-controls');
+    paginationContainer.empty();
+    const buttonGroup = $('<div class="btn-group" role="group" aria-label="Pagination"></div>');
+
+    if (pagination.has_previous) {
+        buttonGroup.append(`
+            <button class="btn btn-secondary btn-sm me-2" data-page="1">First</button>
+            <button class="btn btn-secondary btn-sm me-2" data-page="${pagination.current_page - 1}">Previous</button>
+        `);
+    }
+
+    buttonGroup.append(`<span class="align-self-center mx-3">Page ${pagination.current_page} of ${pagination.total_pages}</span>`);
+
+    if (pagination.has_next) {
+        buttonGroup.append(`
+            <button class="btn btn-secondary btn-sm me-2" data-page="${pagination.current_page + 1}">Next</button>
+            <button class="btn btn-secondary btn-sm" data-page="${pagination.total_pages}">Last</button>
+        `);
+    }
+
+    paginationContainer.append(buttonGroup);
+
+    // Attach event listeners to pagination buttons
+    paginationContainer.find('button').on('click', function () {
+        const page = $(this).data('page');
+        loadOrders(page, getQueryParam('search') || '');
+    });
+}
+
+// Debounce the search input
+$('#orders-search-box').on('input', debounce(function () {
+    const searchQuery = $(this).val();
+    loadOrders(1, searchQuery);
+}, 300));
+
+// Initial load
+const currentPage = getQueryParam('page') || 1;
+const searchQuery = getQueryParam('search') || '';
+loadOrders(currentPage, searchQuery);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // Open the popup with order details when "View" button is clicked
+        $(document).on('click', '.view-order', function(){
+            var orderId = $(this).data('order-id');
+            var csrfToken = $('meta[name="csrf-token"]').attr('content');
+            // Make an AJAX request to fetch the order details
+            $.ajax({
+                url: '/dashboard/orders/' + orderId + '/details/',
+                method: 'GET',
+                success: function(data) {
+                    const Customer = data.is_store_owner ? `${data.customer.slice(0, 1)}****` : data.customer;
+                    const email = data.is_store_owner ? `${data.email.slice(0, 1)}****` : data.email;
+                    const phoneNumber = data.is_store_owner ? `${data.phone_number.slice(0, 2)}****` : data.phone_number;
+                    // Inject order details into the popup
+                    $('#orderPopupBody').html(`
+                        <p><strong>Order ID:</strong> ${data.order_id}</p>
+                        <p><strong>Placed At:</strong> ${dayjs(data.placed_at).format('DD MMM YYYY, hh:mm A')}</p>
+                        <p><strong>Customer:</strong> ${Customer}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Phone Number:</strong> ${phoneNumber}</p>
+                        <p><strong>Address:</strong> ${data.address}</p>
+                        <p><strong>Total Amount:</strong> ₹${data.total_amount}</p>
+                        <p><strong>Payment Status:</strong> ${data.payment_status}</p>
+                        <p><strong>Order Status:</strong> ${data.order_status}</p>
+                        <p><strong>Tracking ID:</strong> ${data.tracking_id}</p>
+                        <p><strong>Delivery Status:</strong> ${data.delivery_status}</p>
+
+                        <h6>Order Items:</h6>
+                        <ul>
+                            ${data.order_items.map(item => `
+                                <li>${item.product} - ${item.quantity} pcs ($${item.total_price}) </br>
+                                    SKU : ${item.sku} - ${item.attributes}</li>
+                            `).join('')}
+                        </ul>
+                        <p><strong>Time Remaining to Approve:</strong> <span id="timer-${data.id}">00:00</span></p>
+
+                    `);
+                    startTimer(data.id, data.placed_at, data.order_status);
+
+                    $('#orderPopup').fadeIn();
+
+                // Poll the timer value until it updates
+            setTimeout(() => {
+                const timerValue = $(`#timer-${data.id}`).text();
+                if (timerValue !== '00:00') {
+                    $('#orderPopupBody').append(`
+                        <div id="orderPopupActions">
+                            <button id="acceptOrderBtn" class="btn btn-success">Accept</button>
+                            <button id="rejectOrderBtn" class="btn btn-danger">Reject</button>
+                        </div>
+                    `);
+
+             // Attach event listeners for accept/reject buttons
+    $('#acceptOrderBtn').off('click').on('click', function() {
+        $.ajax({
+            url: '/dashboard/orders/' + orderId + '/update_status/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            data: { action: 'accept' },
+            success: function(response) {
+                loadOrders(1, '');
+                stopNewOrderAlert();
+                $('#orderPopup').fadeOut();
+            },
+            error: function(response) {
+                stopNewOrderAlert();
+                console.log(response);
+            }
+        });
+    });
+
+    $('#rejectOrderBtn').off('click').on('click', function() {
+        $.ajax({
+            url: '/dashboard/orders/' + orderId + '/update_status/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            data: { action: 'reject' },
+            success: function(response) {
+                loadOrders(1, '');
+                stopNewOrderAlert();
+                $('#orderPopup').fadeOut();
+                
+            },
+            error: function() {
+                stopNewOrderAlert();
+                alert('Failed to reject the order');
+            }
+        });
+    });
+        }
+    }, 1000);
+    
+   
+
+                },
+                error: function() {
+                    alert('Failed to load order details');
+                }
+            });
+        });
+
+
+
+        let currentOrderId = null;
+        let timerInterval; // Store the timer interval ID
+        const alertSound = document.getElementById('newOrderAlert');
+
+        // Function to fetch new orders with status 'Pending' and show in the popup
+        function fetchNewOrder() {
+            $.ajax({
+                url: '/dashboard/new-pending-orders/',  // Endpoint to fetch new orders with 'Pending' status
+                method: 'GET',
+                success: function(data) {
+                    console.log(data);
+
+
+                    // Check if a new order is returned
+                    if (data.success && data.new_order) {
+                        const order = data.new_order;
+                        loadOrders(1, '');
+                        showNewOrderNotice();
+
+
+                        // If the order ID is not the same as the last one shown, display it
+                        if (order.id !== currentOrderId) {
+                            currentOrderId = order.id;  // Update the current order ID
+                            // Populate the popup with order details
+                            $('#orderPopupBody').html(`
+                                <p><strong>Order ID:</strong> ${order.order_no}</p>
+                                <p><strong>Placed At:</strong> ${dayjs(order.placed_at).format('DD MMM YYYY, hh:mm A')}</p>
+                                <p><strong>Total Amount:</strong> ₹${order.total_amount}</p>
+                                <p><strong>Order Status:</strong> ${order.order_status}</p>
+                                <p><strong>Payment Status:</strong> ${order.payment_status}</p>
+                                <h6>Order Items:</h6>
+                                <ul>
+                                    ${order.order_items.map(item => `
+                                        <li>${item.product} - ${item.quantity} pcs ($${item.total_price}) </br>
+                                            SKU : ${item.sku} - ${item.attributes}</li>
+                                    `).join('')}
+                                </ul>
+                                <p><strong>Time Remaining to Approve:</strong> <span id="timer-${order.id}">05:00</span></p>
+                                <div id="orderPopupActions">
+                                    <button id="acceptOrderBtn" class="btn btn-success">Accept</button>
+                                    <button id="rejectOrderBtn" class="btn btn-danger">Reject</button>
+                                </div>
+                            `);
+                            
+                            // Optionally, change the order's status here (if you want to mark it as "Viewed")
+                            // updateOrderStatus(order.id, 'Viewed');
+                            playNewOrderAlert();
+                            // Show the popup
+                            startTimer(order.id, order.placed_at, order.order_status);
+                            $('#orderPopup').fadeIn();
+                            
+
+                            // Clear any existing timer
+                            clearInterval(timerInterval);
+
+                            
+
+                            $('#acceptOrderBtn').click(function() {
+                    $.ajax({
+                        url: '/dashboard/orders/' + order.id + '/update_status/',
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')  // Include the CSRF token here
+                        },
+                        data: { action: 'accept' },
+                        success: function(response) {
+                            loadOrders(1, '');
+                            stopNewOrderAlert();
+                            $('#orderPopup').fadeOut();
+
+                        },
+                        error: function(response) {
+                            stopNewOrderAlert();
+                            alert('Failed to accept the order');
+
+                        }
+                    });
+                });
+
+                // Reject button functionality
+                $('#rejectOrderBtn').click(function() {
+                    $.ajax({
+                        url: '/dashboard/orders/' + order.id + '/update_status/',
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')  // Include the CSRF token here
+                        },
+                        data: { action: 'reject' },
+                        success: function(response) {
+                            loadOrders(1, '');
+                            stopNewOrderAlert();
+                            $('#orderPopup').fadeOut();
+                        },
+                        error: function() {
+                            stopNewOrderAlert();
+                            alert('Failed to reject the order');
+                        }
+                    });
+                });
+                
+               
+            
+                        }
+                    }
+
+                    else {
+                        $('.new-order-notice').fadeOut(function () {
+                            $(this).remove();
+                        });
+                    }
+                },
+                error: function(xhr, errmsg, err) {
+                    console.error('Error fetching new order:', errmsg);
+                }
+            });
+        }
+
+        // Function to check for new orders every 10 seconds
+        function checkNewOrders() {
+            setInterval(fetchNewOrder, 10000);  // Call fetchNewOrder every 10 seconds
+        }
+
+        // Call the function once initially to start checking for new orders
+        checkNewOrders();
+
+
+
+// Function to show the "New Order" notice
+function showNewOrderNotice() {
+    // Create a new notice element dynamically
+    if (!$('.new-order-notice').length) {
+        // Create the notice dynamically if it doesn't exist
+        var noticeHtml = `
+            <div class="alert alert-warning new-order-notice">
+                You have one or more orders pending approval. Please review them within 5 minutes, or they will be canceled!
+            </div>
+        `;
+        // Append the notice above the orders table
+        $('.container').prepend(noticeHtml);
+    }
+}
+
+
+// Function to play the audio
+function playNewOrderAlert() {
+        $('#newOrderAlert')[0].play();
+    }
+
+    // Function to stop the audio
+    function stopNewOrderAlert() {
+        const audioElement = $('#newOrderAlert')[0];
+        audioElement.pause();
+        audioElement.currentTime = 0; // Reset the playback position
+    }
+
+// function startTimer(duration, orderId) {
+//     let timer = duration;
+//     const timerElement = $('#timer');
+
+//     timerInterval = setInterval(function () {
+//         const minutes = Math.floor(timer / 60);
+//         const seconds = timer % 60;
+
+//         // Update the timer display
+//         timerElement.text(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+
+//         if (--timer < 0) {
+//             clearInterval(timerInterval); // Stop the timer
+
+//             $.ajax({
+//                         url: '/dashboard/orders/' + orderId + '/update_status/',
+//                         method: 'POST',
+//                         headers: {
+//                             'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')  // Include the CSRF token here
+//                         },
+//                         data: { action: 'reject' },
+//                         success: function(response) {
+//                             alert(response.message);
+//                             $('#orderPopup').fadeOut();
+//                             $('#order-status-' + orderId).text('Cancelled');
+
+//                         },
+//                         error: function() {
+//                             alert('Failed to Cancel the order');
+//                         }
+//                     });
+//             console.log("Order_Id cancelled")
+//             $('#orderPopup').fadeOut(); // Close the popup
+//             stopAlertSound();
+//             // Call the function to cancel the order
+//             // cancelOrder(orderId);
+
+
+//         }
+//     }, 1000);
+// }
+
+
+function startTimer(orderId, placedAt, orderStatus) {
+    const placedAtTime = new Date(placedAt); // Convert placed_at to a Date object
+    const timerElement = $('#timer-' + orderId); // Get the timer element by orderId
+    
+    // Set an interval to update the timer every second
+    const timerInterval = setInterval(function() {
+        const currentTime = new Date(); // Get the current time
+        const timeDiff = currentTime - placedAtTime; // Calculate the difference between current time and placed_at
+        
+        const remainingTime = 300 - Math.floor(timeDiff / 1000); // 5 minutes = 300 seconds
+
+        if (remainingTime <= 0) {
+            clearInterval(timerInterval); // Stop the timer
+            if (orderStatus == 'pending') {
+            // If the time is up, cancel the order
+            $.ajax({
+                url: '/dashboard/orders/' + orderId + '/update_status/',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': $('meta[name="csrf-token"]').attr('content') // Include the CSRF token
+                },
+                data: { action: 'reject' }, // Action to reject the order
+                success: function(response) {
+                    loadOrders(1, '');
+                    stopNewOrderAlert();
+                    $('#orderPopup').fadeOut();
+                },
+                error: function(xhr, status, error) {
+                    stopNewOrderAlert();
+                    // xhr: The XHR object (XMLHttpRequest), status: status text, error: error message
+                    console.error('Error details:', error); // Log the error message
+                    console.error('Response text:', xhr.responseText); // Log the response text (if any)
+                    console.error('HTTP Status:', xhr.status); // Log the HTTP status code (e.g., 404, 500, etc.)
+                }
+            });
+        }
+            console.log("Order " + orderId + " cancelled.");
+        } else {
+            // Format the remaining time to display it as minutes:seconds
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            timerElement.text(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        }
+    }, 1000); // Update every second
+}
+
+
+    // Close the Order Details popup
+    $('#closeOrderPopup').click(function () {
+            stopNewOrderAlert();
+            $('#orderPopup').fadeOut();
+        });
+
+        // Close the Success popup
+        $('#closeSuccessPopup, #closeSuccessPopupBtn').click(function () {
+            $('#successPopup').fadeOut();
+        });
+
+        // Close popups when clicking outside the popup content
+        $(window).click(function (event) {
+            if ($(event.target).is('#orderPopup')) {
+                stopNewOrderAlert();
+                $('#orderPopup').fadeOut();
+            }
+            if ($(event.target).is('#successPopup')) {
+                $('#successPopup').fadeOut();
+            }
+        });
+    });
+</script>
+
+{% endblock %}

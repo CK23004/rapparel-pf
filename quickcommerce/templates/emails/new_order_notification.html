@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Order Notification</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif; 
+            background-color: #f8f9fa; 
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px; 
+            margin: auto; 
+            background-color: #ffffff; 
+            padding: 20px; 
+            border-radius: 5px; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h2, h4 {
+            color: #333;
+        }
+        .table th, .table td {
+            text-align: left;
+        }
+        .table th {
+            background-color: #f2f2f2;
+        }
+        .total-amount {
+            font-weight: bold; 
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2 class="text-center">New Order Notification</h2>
+        <p>Dear Admin/Store Owner,</p>
+        <p>A new order has been placed. Here are the details:</p>
+
+        <h4>Order Details:</h4>
+        <p><strong>Order ID:</strong> {{ order.id }}</p>
+        <p><strong>Customer Name:</strong> {{ order.full_name }}</p>
+        <p><strong>Email:</strong> {{ order.email }}</p>
+        <p><strong>Phone:</strong> {{ order.phone_number }}</p>
+        <p><strong>Placed At:</strong> {{ order.placed_at|date:"Y-m-d H:i:s" }}</p>
+        <p><strong>Payment Status:</strong> {{ order.payment_status }}</p>
+        <p><strong>Delivery Status:</strong> {{ order.delivery_status }}</p>
+
+        <h4>Shipping Address:</h4>
+        <p>
+            {{ order.street_address }}<br>
+            {{ order.city }}, {{ order.state }} {{ order.pin_code }}<br>
+            {{ order.country }}<br>
+        </p>
+
+        <h4>Order Items:</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Price (Rs.)</th>
+                    <th>Total (Rs.)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.order_items.all %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>{{ item.get_total_price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="total-amount">Total Amount: Rs.{{ order.total_amount }}</p>
+
+        <p>If you have any questions regarding this order, please feel free to reach out.</p>
+        <p>Thank you!</p>
+        <p>Team Rapparel</p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
